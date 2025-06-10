@@ -9,7 +9,7 @@ using System.Security.Cryptography;
 using System.Text;
 namespace WithClientMessages;
 
-[MinimumApiVersion(80)]
+[MinimumApiVersion(318)]
 public class WithClientMessagesPlugin : BasePlugin
 {
     public override string ModuleName => "Example: With Client Messages";
