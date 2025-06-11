@@ -159,6 +159,11 @@ jobs:
           path: TestResults-${{ env.GITHUB_SHA_SHORT }}
         if: ${{ always() }}
 
+      - name: Publish artifacts
+        run: |
+          dotnet publish -c Release /p:Version=1.0.${{ env.BUILD_NUMBER }} managed/CounterStrikeSharp.API
+          dotnet pack -c Release /p:Version=1.0.${{ env.BUILD_NUMBER }} managed/CounterStrikeSharp.API
+
       - uses: actions/upload-artifact@v4
         with:
           name: counterstrikesharp-build-api-${{ env.GITHUB_SHA_SHORT }}
