@@ -15,10 +15,11 @@
  */
 
 using System.Runtime.CompilerServices;
+using CounterStrikeSharp.API.Modules.Memory;
 
 namespace CounterStrikeSharp.API.Modules.Utils
 {
-    public class Vector4D : NativeObject
+    public class Vector4D : DisposableMemory
     {
         public unsafe ref float X => ref Unsafe.Add(ref *(float*)Handle.ToPointer(), 0);
 
@@ -46,3 +47,4 @@ namespace CounterStrikeSharp.API.Modules.Utils
         }
     }
 }
+

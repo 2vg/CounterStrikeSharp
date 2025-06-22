@@ -35,14 +35,9 @@ CREATE_SETTER_FUNCTION(Vector, float, X, Vector*, obj->x = value);
 CREATE_SETTER_FUNCTION(Vector, float, Y, Vector*, obj->y = value);
 CREATE_SETTER_FUNCTION(Vector, float, Z, Vector*, obj->z = value);
 
-// TODO: These need to be cleared out somehow
-std::vector<Vector*> managed_vectors;
-
 Vector* VectorNew(ScriptContext& script_context)
 {
-    auto vec = new Vector();
-    managed_vectors.push_back(vec);
-    return vec;
+    return new Vector();
 }
 
 Vector2D* Vector2DNew(ScriptContext& script_context)
@@ -65,14 +60,9 @@ Quaternion* QuaternionNew(ScriptContext& script_context)
     return new Quaternion();
 }
 
-// TODO: These need to be cleared out somehow
-std::vector<QAngle*> managed_angles;
-
 QAngle* AngleNew(ScriptContext& script_context)
 {
-    auto ang = new QAngle();
-    managed_angles.push_back(ang);
-    return ang;
+    return new QAngle();
 }
 
 void NativeVectorAngles(ScriptContext& script_context)
