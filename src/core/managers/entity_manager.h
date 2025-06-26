@@ -68,13 +68,6 @@ class EntityManager : public GlobalClass
     CEntityListener entityListener;
     std::map<OutputKey_t, CallbackPair*> m_pHookMap;
 
-    ScriptCallback *on_entity_spawned_callback;
-    ScriptCallback *on_entity_created_callback;
-    ScriptCallback *on_entity_deleted_callback;
-    ScriptCallback *on_entity_parent_changed_callback;
-    ScriptCallback *check_transmit;
-    ScriptCallback *on_entity_input_callback;
-
   private:
     void CheckTransmit(CCheckTransmitInfo** pInfoInfoList,
                        int nInfoCount,
