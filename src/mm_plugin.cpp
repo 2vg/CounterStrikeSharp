@@ -34,7 +34,7 @@
 #include "scripting/script_engine.h"
 #include "tier0/vprof.h"
 
-#define VERSION_STRING  "v" BUILD_NUMBER " @ " GITHUB_SHA
+#define VERSION_STRING  "v" SEMVER " @ " GITHUB_SHA
 #define BUILD_TIMESTAMP __DATE__ " " __TIME__
 
 counterstrikesharp::GlobalClass* counterstrikesharp::GlobalClass::head = nullptr;
@@ -66,6 +66,8 @@ class GameSessionConfiguration_t
 {
 };
 
+PLUGIN_EXPOSE(CounterStrikeSharpMMPlugin, counterstrikesharp::gPlugin);
+
 namespace counterstrikesharp {
 
 SH_DECL_HOOK3_void(IServerGameDLL, GameFrame, SH_NOATTRIB, 0, bool, bool, bool);
@@ -81,7 +83,6 @@ CounterStrikeSharpMMPlugin gPlugin;
 ConVar sample_cvar("sample_cvar", "42", 0);
 #endif
 
-PLUGIN_EXPOSE(CounterStrikeSharpMMPlugin, gPlugin);
 bool CounterStrikeSharpMMPlugin::Load(PluginId id, ISmmAPI* ismm, char* error, size_t maxlen, bool late)
 {
     PLUGIN_SAVEVARS();
