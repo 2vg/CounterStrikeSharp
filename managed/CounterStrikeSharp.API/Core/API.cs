@@ -1431,20 +1431,6 @@ namespace CounterStrikeSharp.API.Core
 			}
 		}
 
-		public static void HookFunction(IntPtr function, InputArgument hook, bool post)
-		{
-			lock (ScriptContext.GlobalScriptContext.Lock)
-			{
-				ScriptContext.GlobalScriptContext.Reset();
-				ScriptContext.GlobalScriptContext.Push(function);
-				ScriptContext.GlobalScriptContext.Push((InputArgument)hook);
-				ScriptContext.GlobalScriptContext.Push(post);
-				ScriptContext.GlobalScriptContext.SetIdentifier(0xA6C8BA9B);
-				ScriptContext.GlobalScriptContext.Invoke();
-				ScriptContext.GlobalScriptContext.CheckErrors();
-			}
-		}
-
 		public static void UnhookFunction(IntPtr function, InputArgument hook, bool post)
 		{
 			lock (ScriptContext.GlobalScriptContext.Lock)

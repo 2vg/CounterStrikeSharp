@@ -66,6 +66,4 @@ public partial class matrix3x4_t : DisposableMemory
                $"{this[1, 0]:n2} {this[1, 1]:n2} {this[1, 2]:n2} {this[1, 3]:n2}\n" +
                $"{this[2, 0]:n2} {this[2, 1]:n2} {this[2, 2]:n2} {this[2, 3]:n2}";
     }
-
-    public unsafe ref float this[int row, int column] => ref Unsafe.Add(ref *(float*)Handle, row * 4 + column);
 }
