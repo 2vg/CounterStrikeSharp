@@ -1,4 +1,4 @@
-/*
+﻿/*
  *  This file is part of CounterStrikeSharp.
  *  CounterStrikeSharp is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -14,29 +14,18 @@
  *  along with CounterStrikeSharp.  If not, see <https://www.gnu.org/licenses/>. *
  */
 
-using System.Runtime.CompilerServices;
-using CounterStrikeSharp.API.Modules.Memory;
-
-namespace CounterStrikeSharp.API.Modules.Utils
+namespace CounterStrikeSharp.API.Core.Memory
 {
-    public class Vector2D : DisposableMemory
+    public interface IMemoryManager
     {
-        public unsafe ref float X => ref Unsafe.Add(ref *(float*)Handle.ToPointer(), 0);
-        public unsafe ref float Y => ref Unsafe.Add(ref *(float*)Handle.ToPointer(), 1);
+        public void Load();
 
-        public Vector2D(IntPtr pointer) : base(pointer)
-        {
-        }
+        public void Start();
 
-        public Vector2D(float? x = null, float? y = null) : this(NativeAPI.Vector2dNew())
-        {
-            this.X = x ?? 0;
-            this.Y = y ?? 0;
-        }
+        public void Stop(bool forceStop = false);
 
-        public override string ToString()
-        {
-            return $"{X:n2} {Y:n2}";
-        }
+        public void Resume();
+
+        public void ForceCollect(int generation, GCCollectionMode mode, bool blocking);
     }
 }

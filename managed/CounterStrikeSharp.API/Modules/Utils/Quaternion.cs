@@ -14,13 +14,12 @@
  *  along with CounterStrikeSharp.  If not, see <https://www.gnu.org/licenses/>. *
  */
 
-using System;
 using System.Runtime.CompilerServices;
-using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Modules.Memory;
 
 namespace CounterStrikeSharp.API.Modules.Utils
 {
-    public class Quaternion : NativeObject
+    public class Quaternion : DisposableMemory
     {
         // Not sure who made this one? maybe mark it as 'obsolete' to don't break existing plugins but warn them?
         public unsafe ref float Value => ref Unsafe.Add(ref *(float*)Handle.ToPointer(), 0);

@@ -14,13 +14,12 @@
  *  along with CounterStrikeSharp.  If not, see <https://www.gnu.org/licenses/>. *
  */
 
-using System;
 using System.Runtime.CompilerServices;
-using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Modules.Memory;
 
 namespace CounterStrikeSharp.API.Modules.Utils
 {
-    public class Vector4D : NativeObject
+    public class Vector4D : DisposableMemory
     {
         public unsafe ref float X => ref Unsafe.Add(ref *(float*)Handle.ToPointer(), 0);
         public unsafe ref float Y => ref Unsafe.Add(ref *(float*)Handle.ToPointer(), 1);
