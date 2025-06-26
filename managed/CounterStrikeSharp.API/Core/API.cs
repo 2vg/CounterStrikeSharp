@@ -1503,19 +1503,6 @@ namespace CounterStrikeSharp.API.Core
 			}
 		}
 
-		public static int GetNetworkVectorSize(IntPtr vec)
-		{
-			lock (ScriptContext.GlobalScriptContext.Lock)
-			{
-				ScriptContext.GlobalScriptContext.Reset();
-				ScriptContext.GlobalScriptContext.Push(vec);
-				ScriptContext.GlobalScriptContext.SetIdentifier(0xA585F34E);
-				ScriptContext.GlobalScriptContext.Invoke();
-				ScriptContext.GlobalScriptContext.CheckErrors();
-				return (int)ScriptContext.GlobalScriptContext.GetResult(typeof(int));
-			}
-		}
-
 		public static IntPtr GetNetworkVectorElementAt(IntPtr vec, int index)
 		{
 			lock (ScriptContext.GlobalScriptContext.Lock)
