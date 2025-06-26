@@ -193,23 +193,6 @@ void EntityManager::OnEntityInput(CEntityIdentity* pThis, const char* pInputName
     }
 }
 
-void EntityManager::OnEntityInput(CEntityIdentity* pThis, const char* pInputName,
-                                 CEntityInstance* pActivator, CEntityInstance* pCaller,
-                                 variant_t* value, int nOutputID)
-{
-    auto callback = globals::entityManager.on_entity_input_callback;
-
-    if (callback && callback->GetFunctionCount()) {
-        callback->ScriptContext().Reset();
-        callback->ScriptContext().Push(pThis);
-        callback->ScriptContext().Push(pInputName);
-        callback->ScriptContext().Push(pActivator);
-        callback->ScriptContext().Push(pCaller);
-        callback->ScriptContext().Push(nOutputID);
-        callback->Execute();
-    }
-}
-
 void EntityManager::HookEntityOutput(const char* szClassname, const char* szOutput, CallbackT fnCallback, HookMode mode)
 {
     auto outputKey = OutputKey_t(szClassname, szOutput);
