@@ -63,10 +63,11 @@ class EntityManager : public GlobalClass
     void OnShutdown() override;
     void HookEntityOutput(const char* szClassname, const char* szOutput, CallbackT fnCallback, HookMode mode);
     void UnhookEntityOutput(const char* szClassname, const char* szOutput, CallbackT fnCallback, HookMode mode);
+    void OnEntityInput(CEntityIdentity *pThis, const char *pInputName, CEntityInstance *pActivator,
+        CEntityInstance *pCaller, variant_t *value, int nOutputID);
     CEntityListener entityListener;
     std::map<OutputKey_t, CallbackPair*> m_pHookMap;
 
-  private:
     void CheckTransmit(CCheckTransmitInfo** pInfoInfoList,
                        int nInfoCount,
                        CBitVec<16384>& unionTransmitEdicts,
@@ -75,12 +76,14 @@ class EntityManager : public GlobalClass
                        int nEntityIndices,
                        bool bEnablePVSBits);
 
-    ScriptCallback* on_entity_spawned_callback;
-    ScriptCallback* on_entity_created_callback;
-    ScriptCallback* on_entity_deleted_callback;
-    ScriptCallback* on_entity_parent_changed_callback;
-    ScriptCallback* check_transmit;
+    ScriptCallback *on_entity_spawned_callback;
+    ScriptCallback *on_entity_created_callback;
+    ScriptCallback *on_entity_deleted_callback;
+    ScriptCallback *on_entity_parent_changed_callback;
+    ScriptCallback *check_transmit;
+    ScriptCallback *on_entity_input_callback;
 
+  private:
     std::string m_profile_name;
 };
 
@@ -131,10 +134,20 @@ class CEntityIOOutput
 
 typedef void (*FireOutputInternal)(CEntityIOOutput* const, CEntityInstance*, CEntityInstance*, const CVariant* const, float);
 
-static void DetourFireOutputInternal(
-    CEntityIOOutput* const pThis, CEntityInstance* pActivator, CEntityInstance* pCaller, const CVariant* const value, float flDelay);
+typedef void (*EntityIdentityAccept)(CEntityIdentity*, CUtlSymbolLarge*, CEntityInstance*,
+                                       CEntityInstance*, variant_t*, int);
+
+static void DetourFireOutputInternal(CEntityIOOutput* const pThis, CEntityInstance* pActivator,
+                                     CEntityInstance* pCaller, const CVariant* const value, float flDelay);
+
+static void DetourEntityIdentityAccept(CEntityIdentity* pThis, CUtlSymbolLarge* pInputName,
+                                       CEntityInstance* pActivator, CEntityInstance* pCaller,
+                                       variant_t* value, int nOutputID);
 
 static FireOutputInternal m_pFireOutputInternal = nullptr;
+static EntityIdentityAccept m_pEntityIdentityAccept = nullptr;
+
+inline void (*CBaseEntity_DispatchSpawn)(void* pEntity, CEntityKeyValues* pKeyValues);
 
 // Do it in here because i didn't found a good place to do this
 inline void (*CEntityInstance_AcceptInput)(

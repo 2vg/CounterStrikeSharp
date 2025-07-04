@@ -23,6 +23,14 @@
 #include "scripting/autonative.h"
 #include "scripting/script_engine.h"
 
+#include "core/memory_module.h"
+
+#ifdef _WIN32
+#define CALL_CONV CONV_THISCALL
+#else
+#define CALL_CONV CONV_CDECL
+#endif
+
 namespace counterstrikesharp {
 std::vector<ValveFunction*> m_managed_ptrs;
 
@@ -32,6 +40,30 @@ void* FindSignatureNative(ScriptContext& scriptContext)
     auto bytesStr = scriptContext.GetArgument<const char*>(1);
 
     return FindSignature(moduleName, bytesStr);
+}
+
+void* FindVirtualTable(ScriptContext& scriptContext)
+{
+    auto binary_name = scriptContext.GetArgument<const char*>(0);
+    auto symbol_name = scriptContext.GetArgument<const char*>(1);
+
+    auto module = modules::GetModuleByName(binary_name);
+
+    if (!module)
+    {
+        scriptContext.ThrowNativeError("Failed to get module %s", binary_name);
+        return nullptr;
+    }
+
+    auto vtable = module->FindVirtualTable(symbol_name);
+
+    if (!vtable)
+    {
+        scriptContext.ThrowNativeError("Failed to get VTable %s from module %s", symbol_name, binary_name);
+        return nullptr;
+    }
+
+    return vtable;
 }
 
 ValveFunction* CreateVirtualFunctionBySignature(ScriptContext& script_context)
@@ -56,7 +88,7 @@ ValveFunction* CreateVirtualFunctionBySignature(ScriptContext& script_context)
         args.push_back(script_context.GetArgument<DataType_t>(5 + i));
     }
 
-    auto function = new ValveFunction(function_addr, CONV_CDECL, args, return_type);
+    auto function = new ValveFunction(function_addr, CALL_CONV, args, return_type);
     function->SetSignature(signature_hex_string);
 
     CSSHARP_CORE_TRACE("Created virtual function, pointer found at {}, signature {}", function_addr, signature_hex_string);
@@ -81,14 +113,107 @@ ValveFunction* CreateVirtualFunction(ScriptContext& script_context)
 
     auto function_addr = (void*)vtable[vtable_offset];
 
+    if (function_addr == nullptr)
+    {
+        script_context.ThrowNativeError("Could not find virtual function at offset %i", vtable_offset);
+        return nullptr;
+    }
+
     auto args = std::vector<DataType_t>();
     for (int i = 0; i < num_arguments; i++)
     {
         args.push_back(script_context.GetArgument<DataType_t>(4 + i));
     }
 
-    auto function = new ValveFunction(function_addr, CONV_THISCALL, args, return_type);
+    auto function = new ValveFunction(function_addr, CALL_CONV, args, return_type);
     function->SetOffset(vtable_offset);
+
+    CSSHARP_CORE_TRACE("Created virtual function, pointer found at {}, offset {}", function_addr, vtable_offset);
+
+    m_managed_ptrs.push_back(function);
+    return function;
+}
+
+ValveFunction* CreateVirtualFunctionBySymbol(ScriptContext& script_context)
+{
+    auto binary_name = script_context.GetArgument<const char*>(0);
+    auto symbol_name = script_context.GetArgument<const char*>(1);
+    auto vtable_offset = script_context.GetArgument<int>(2);
+    auto num_arguments = script_context.GetArgument<int>(3);
+    auto return_type = script_context.GetArgument<DataType_t>(4);
+
+    auto module = modules::GetModuleByName(binary_name);
+
+    if (!module)
+    {
+        script_context.ThrowNativeError("Failed to get module %s", binary_name);
+        return nullptr;
+    }
+
+    auto vtable = module->FindVirtualTable(symbol_name);
+
+    if (!vtable)
+    {
+        script_context.ThrowNativeError("Failed to get VTable %s from module %s", symbol_name, binary_name);
+        return nullptr;
+    }
+
+    auto function_addr = static_cast<void**>(vtable)[vtable_offset];
+
+    if (function_addr == nullptr)
+    {
+        script_context.ThrowNativeError("Could not find virtual function at offset %i", vtable_offset);
+        return nullptr;
+    }
+
+    auto args = std::vector<DataType_t>();
+
+    for (int i = 0; i < num_arguments; i++)
+    {
+        args.push_back(script_context.GetArgument<DataType_t>(5 + i));
+    }
+
+    auto function = new ValveFunction(function_addr, CALL_CONV, args, return_type);
+    function->SetOffset(vtable_offset);
+
+    CSSHARP_CORE_TRACE("Created virtual function, pointer found at {}, symbol {}, offset {}", function_addr, symbol_name, vtable_offset);
+
+    m_managed_ptrs.push_back(function);
+    return function;
+}
+
+ValveFunction* CreateVirtualFunctionFromVTable(ScriptContext& script_context)
+{
+    auto vtable = script_context.GetArgument<void*>(0);
+    auto vtable_offset = script_context.GetArgument<int>(1);
+    auto num_arguments = script_context.GetArgument<int>(2);
+    auto return_type = script_context.GetArgument<DataType_t>(3);
+
+    if (!vtable)
+    {
+        script_context.ThrowNativeError("VTable is null");
+        return nullptr;
+    }
+
+    auto function_addr = static_cast<void**>(vtable)[vtable_offset];
+
+    if (function_addr == nullptr)
+    {
+        script_context.ThrowNativeError("Could not find virtual function at offset %i", vtable_offset);
+        return nullptr;
+    }
+
+    auto args = std::vector<DataType_t>();
+
+    for (int i = 0; i < num_arguments; i++)
+    {
+        args.push_back(script_context.GetArgument<DataType_t>(4 + i));
+    }
+
+    auto function = new ValveFunction(function_addr, CALL_CONV, args, return_type);
+    function->SetOffset(vtable_offset);
+
+    CSSHARP_CORE_TRACE("Created virtual function, pointer found at {}, offset {}", function_addr, vtable_offset);
 
     m_managed_ptrs.push_back(function);
     return function;
@@ -159,15 +284,91 @@ void RemoveAllNetworkVectorElements(ScriptContext& script_context)
     vec->RemoveAll();
 }
 
+typedef void (*Release_Func)(void* ptr);
+
+static void ReleaseHelper(Release_Func func, ScriptContext& script_context, void* ptr)
+{
+    if (!ptr)
+    {
+        script_context.ThrowNativeError("Null pointer reference: %p", ptr);
+        return;
+    }
+
+    // TODO: replace with CSSHARP_CORE_TRACE
+    //CSSHARP_CORE_INFO("Releasing pointer: {}", ptr);
+
+#ifdef _WIN32
+    _try
+    {
+        func(ptr);
+    }
+    _except (EXCEPTION_ACCESS_VIOLATION)
+    {
+        script_context.ThrowNativeError("Invalid pointer reference: %p (EXCEPTION_ACCESS_VIOLATION)", ptr);
+    }
+#else
+    func(ptr);
+#endif
+}
+
+void Native_MemAlloc_FreePointer(ScriptContext& script_context)
+{
+    void* ptr = script_context.GetArgument<void*>(0);
+    ReleaseHelper(MemAlloc_Free, script_context, ptr);
+}
+
+void Native_MemAlloc_FreePointerAligned(ScriptContext& script_context)
+{
+    void* ptr = script_context.GetArgument<void*>(0);
+    ReleaseHelper(MemAlloc_FreeAligned, script_context, ptr);
+}
+
+void* Native_MemAlloc_Allocate(ScriptContext& script_context)
+{
+    size_t size = script_context.GetArgument<size_t>(0);
+    return MemAlloc_Alloc(size);
+}
+
+void* Native_MemAlloc_AllocateAligned(ScriptContext& script_context)
+{
+    size_t size = script_context.GetArgument<size_t>(0);
+    size_t align = script_context.GetArgument<size_t>(1);
+    return MemAlloc_AllocAlignedUnattributed(size, align);
+}
+
+void* Native_MemAlloc_ReallocateAligned(ScriptContext& script_context)
+{
+    void* ptr = script_context.GetArgument<void*>(0);
+    size_t size = script_context.GetArgument<size_t>(1);
+    size_t align = script_context.GetArgument<size_t>(2);
+    return MemAlloc_ReallocAligned(ptr, size, align);
+}
+
+size_t Native_MemAlloc_GetSizeAligned(ScriptContext& script_context)
+{
+    void* ptr = script_context.GetArgument<void*>(0);
+    return MemAlloc_GetSizeAligned(ptr);
+}
+
 REGISTER_NATIVES(memory, {
     ScriptEngine::RegisterNativeHandler("CREATE_VIRTUAL_FUNCTION", CreateVirtualFunction);
     ScriptEngine::RegisterNativeHandler("CREATE_VIRTUAL_FUNCTION_BY_SIGNATURE", CreateVirtualFunctionBySignature);
+    ScriptEngine::RegisterNativeHandler("CREATE_VIRTUAL_FUNCTION_BY_SYMBOL", CreateVirtualFunctionBySymbol);
+    ScriptEngine::RegisterNativeHandler("CREATE_VIRTUAL_FUNCTION_FROM_V_TABLE", CreateVirtualFunctionFromVTable);
     ScriptEngine::RegisterNativeHandler("EXECUTE_VIRTUAL_FUNCTION", ExecuteVirtualFunction);
     ScriptEngine::RegisterNativeHandler("HOOK_FUNCTION", HookFunction);
     ScriptEngine::RegisterNativeHandler("UNHOOK_FUNCTION", UnhookFunction);
     ScriptEngine::RegisterNativeHandler("FIND_SIGNATURE", FindSignatureNative);
+    ScriptEngine::RegisterNativeHandler("FIND_VIRTUAL_TABLE", FindVirtualTable);
     ScriptEngine::RegisterNativeHandler("GET_NETWORK_VECTOR_SIZE", GetNetworkVectorSize);
     ScriptEngine::RegisterNativeHandler("GET_NETWORK_VECTOR_ELEMENT_AT", GetNetworkVectorElementAt);
     ScriptEngine::RegisterNativeHandler("REMOVE_ALL_NETWORK_VECTOR_ELEMENTS", RemoveAllNetworkVectorElements);
+
+    ScriptEngine::RegisterNativeHandler("MEM_ALLOC_ALLOCATE", Native_MemAlloc_Allocate);
+    ScriptEngine::RegisterNativeHandler("MEM_ALLOC_ALLOCATE_ALIGNED", Native_MemAlloc_Allocate);
+    ScriptEngine::RegisterNativeHandler("MEM_ALLOC_REALLOCATE_ALIGNED", Native_MemAlloc_ReallocateAligned);
+    ScriptEngine::RegisterNativeHandler("MEM_ALLOC_GETSIZE_ALIGNED", Native_MemAlloc_GetSizeAligned);
+    ScriptEngine::RegisterNativeHandler("MEM_ALLOC_FREE_POINTER", Native_MemAlloc_FreePointer);
+    ScriptEngine::RegisterNativeHandler("MEM_ALLOC_FREE_POINTER_ALIGNED", Native_MemAlloc_FreePointerAligned);
 })
 } // namespace counterstrikesharp

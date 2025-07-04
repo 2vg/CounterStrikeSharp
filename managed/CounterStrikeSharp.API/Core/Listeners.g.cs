@@ -38,6 +38,17 @@ namespace CounterStrikeSharp.API.Core
         public delegate void OnEntityParentChanged(CEntityInstance entity, CEntityInstance newParent);
 
         /// <summary>
+        /// Called when an entity got input.
+        /// </summary>
+        /// <param name="entity">The entity whose parent was changed.</param>
+        /// <param name="input">the entity input.</param>
+        /// <param name="activator">The activator entity.</param>
+        /// <param name="caller">The caller entity.</param>
+        /// <param name="output">The output value.</param>
+        [ListenerName("OnEntityInput")]
+        public delegate void OnEntityInput(CEntityIdentity entity, string input, CEntityInstance activator, CEntityInstance caller, int output);
+
+        /// <summary>
         /// Called on every server tick (64 per second).
         /// This handler should avoid containing expensive operations.
         /// </summary>

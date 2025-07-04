@@ -35,24 +35,25 @@ CREATE_SETTER_FUNCTION(Vector, float, X, Vector*, obj->x = value);
 CREATE_SETTER_FUNCTION(Vector, float, Y, Vector*, obj->y = value);
 CREATE_SETTER_FUNCTION(Vector, float, Z, Vector*, obj->z = value);
 
-// TODO: These need to be cleared out somehow
-std::vector<Vector*> managed_vectors;
-
 Vector* VectorNew(ScriptContext& script_context)
 {
-    auto vec = new Vector();
-    managed_vectors.push_back(vec);
-    return vec;
+    return new Vector();
 }
+
+Vector2D* Vector2DNew(ScriptContext& script_context) { return new Vector2D(); }
+
+Vector4D* Vector4DNew(ScriptContext& script_context) { return new Vector4D(); }
+
+matrix3x4_t* Matrix3x4New(ScriptContext& script_context) { return new matrix3x4_t(); }
+
+Quaternion* QuaternionNew(ScriptContext& script_context) { return new Quaternion(); }
 
 // TODO: These need to be cleared out somehow
 std::vector<QAngle*> managed_angles;
 
 QAngle* AngleNew(ScriptContext& script_context)
 {
-    auto ang = new QAngle();
-    managed_angles.push_back(ang);
-    return ang;
+    return new QAngle();
 }
 
 void NativeVectorAngles(ScriptContext& script_context)
@@ -83,6 +84,10 @@ void NativeAngleVectors(ScriptContext& script_context)
 
 REGISTER_NATIVES(vector, {
     ScriptEngine::RegisterNativeHandler("VECTOR_NEW", VectorNew);
+    ScriptEngine::RegisterNativeHandler("VECTOR2D_NEW", Vector2DNew);
+    ScriptEngine::RegisterNativeHandler("VECTOR4D_NEW", Vector4DNew);
+    ScriptEngine::RegisterNativeHandler("MATRIX3X4_NEW", Matrix3x4New);
+    ScriptEngine::RegisterNativeHandler("QUATERNION_NEW", QuaternionNew);
     ScriptEngine::RegisterNativeHandler("ANGLE_NEW", AngleNew);
 
     ScriptEngine::RegisterNativeHandler("VECTOR_SET_X", VectorSetX);

@@ -2,4 +2,5 @@ OnEntitySpawned: entity:pointer
 OnEntityCreated: entity:pointer
 OnEntityDeleted: entity:pointer
 OnEntityParentChanged: entity:pointer, newParent:pointer
+OnEntityInput: entity:pointer, input:string, activator:pointer, caller:pointer, output:int
 CheckTransmit: infoList:pointer

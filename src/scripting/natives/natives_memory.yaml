@@ -1,9 +1,18 @@
 CREATE_VIRTUAL_FUNCTION: pointer:pointer,vtableOffset:int,numArguments:int,returnType:int,arguments:object[] -> pointer
 CREATE_VIRTUAL_FUNCTION_BY_SIGNATURE: pointer:pointer,binaryName:string,signature:string,numArguments:int,returnType:int,arguments:object[] -> pointer
+CREATE_VIRTUAL_FUNCTION_BY_SYMBOL: binaryName:string, symbolName:string, vtableOffset:int, numArguments:int, returnType:int, arguments:object[] -> pointer
+CREATE_VIRTUAL_FUNCTION_FROM_V_TABLE: pointer:pointer, vtableOffset:int, numArguments:int, returnType:int, arguments:object[] -> pointer
 HOOK_FUNCTION: function:pointer, hook:callback, post:bool -> void
 UNHOOK_FUNCTION: function:pointer, hook:callback, post:bool -> void
 EXECUTE_VIRTUAL_FUNCTION: function:pointer,arguments:object[] -> any
 FIND_SIGNATURE: modulePath:string, signature:string -> pointer
+FIND_VIRTUAL_TABLE: binaryPath:string, symbolName:string -> pointer
 GET_NETWORK_VECTOR_SIZE: vec:pointer -> int
 GET_NETWORK_VECTOR_ELEMENT_AT: vec:pointer, index:int -> pointer
 REMOVE_ALL_NETWORK_VECTOR_ELEMENTS: vec:pointer -> void
+MEM_ALLOC_ALLOCATE: size:int -> pointer
+MEM_ALLOC_ALLOCATE_ALIGNED: size:int, align:int -> pointer
+MEM_ALLOC_REALLOCATE_ALIGNED: pointer:pointer, size:int, align:int -> pointer
+MEM_ALLOC_GET_SIZE_ALIGNED: pointer:pointer -> int
+MEM_ALLOC_FREE_POINTER: pointer:pointer -> void
+MEM_ALLOC_FREE_POINTER_ALIGNED: pointer:pointer -> void

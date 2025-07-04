@@ -33,6 +33,21 @@ public partial class CBaseEntity
         VirtualFunctions.CBaseEntity_DispatchSpawn(Handle, IntPtr.Zero);
     }
 
+    /// <exception cref="InvalidOperationException">Entity is not valid</exception>
+    public void DispatchSpawn(CEntityKeyValues keyValues)
+    {
+        Guard.IsValidEntity(this);
+
+        if (keyValues != null)
+        {
+            NativeAPI.DispatchSpawn(Handle, keyValues.Handle);
+        }
+        else
+        {
+            VirtualFunctions.CBaseEntity_DispatchSpawn(Handle, IntPtr.Zero);
+        }
+    }
+
     /// <summary>
     /// Shorthand for accessing an entity's CBodyComponent?.SceneNode?.AbsOrigin;
     /// </summary>
@@ -62,7 +77,7 @@ public partial class CBaseEntity
     public uint EmitSound(string soundEventName, RecipientFilter? recipients = null, float volume = 1f, float pitch = 0)
     {
         Guard.IsValidEntity(this);
-        
+
         if (recipients == null)
         {
             recipients = new RecipientFilter();
