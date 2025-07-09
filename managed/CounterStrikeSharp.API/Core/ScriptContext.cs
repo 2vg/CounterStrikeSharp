@@ -50,8 +50,8 @@ namespace CounterStrikeSharp.API.Core
 
 		public ulong nativeIdentifier;
 		public fixed byte functionData[8 * 32];
-        public fixed byte result[8];
-    }
+		public fixed byte result[8];
+	}
 
 	public class ScriptContext
 	{
@@ -67,14 +67,14 @@ namespace CounterStrikeSharp.API.Core
 			}
 		}
 
-        public unsafe ScriptContext()
+		public unsafe ScriptContext()
 		{
 		}
 
-        public unsafe ScriptContext(fxScriptContext* context)
-        {
-            m_extContext = *context;
-        }
+		public unsafe ScriptContext(fxScriptContext* context)
+		{
+			m_extContext = *context;
+		}
 
 		private readonly ConcurrentQueue<Action> ms_finalizers = new ConcurrentQueue<Action>();
 
@@ -84,7 +84,7 @@ namespace CounterStrikeSharp.API.Core
 
 		internal fxScriptContext m_extContext = new fxScriptContext();
 
-        internal bool isCleanupLocked = false;
+		internal bool isCleanupLocked = false;
 
 		[SecuritySafeCritical]
 		public void Reset()
@@ -97,23 +97,23 @@ namespace CounterStrikeSharp.API.Core
 		{
 			m_extContext.numArguments = 0;
 			m_extContext.numResults = 0;
-            m_extContext.hasError = 0;
-            //CleanUp();
-        }
+			m_extContext.hasError = 0;
+			//CleanUp();
+		}
 
 		[SecuritySafeCritical]
 		public void Invoke()
 		{
-            if (!isCleanupLocked)
-            {
-                isCleanupLocked = true;
-                InvokeNativeInternal();
-                GlobalCleanUp();
-                isCleanupLocked = false;
-                return;
-            }
+			if (!isCleanupLocked)
+			{
+				isCleanupLocked = true;
+				InvokeNativeInternal();
+				GlobalCleanUp();
+				isCleanupLocked = false;
+				return;
+			}
 
-            InvokeNativeInternal();
+			InvokeNativeInternal();
 		}
 
 		[SecurityCritical]
@@ -153,13 +153,13 @@ namespace CounterStrikeSharp.API.Core
 			PushInternal(arg);
 		}
 
-        [SecuritySafeCritical]
+		[SecuritySafeCritical]
 		public unsafe void SetResult(object arg, fxScriptContext* cxt)
 		{
-            SetResultInternal(cxt, arg);
+			SetResultInternal(cxt, arg);
 		}
 
-        [SecurityCritical]
+		[SecurityCritical]
 		private unsafe void PushInternal(object arg)
 		{
 			fixed (fxScriptContext* context = &m_extContext)
@@ -217,15 +217,15 @@ namespace CounterStrikeSharp.API.Core
 
 				return;
 			}
-            else if (arg is IMarshalToNative marshalToNative)
-            {
-                foreach (var value in marshalToNative.GetNativeObject())
-                {
-                    Push(context ,value);
-                }
+			else if (arg is IMarshalToNative marshalToNative)
+			{
+				foreach (var value in marshalToNative.GetNativeObject())
+				{
+					Push(context, value);
+				}
 
-                return;
-            }
+				return;
+			}
 			else if (arg is NativeObject nativeObject)
 			{
 				Push(context, (InputArgument)nativeObject);
@@ -245,38 +245,38 @@ namespace CounterStrikeSharp.API.Core
 			context->numArguments++;
 		}
 
-        [SecurityCritical]
-        internal unsafe void SetResultInternal(fxScriptContext* context, object arg)
-        {
-            if (arg == null)
-            {
-                arg = 0;
-            }
+		[SecurityCritical]
+		internal unsafe void SetResultInternal(fxScriptContext* context, object arg)
+		{
+			if (arg == null)
+			{
+				arg = 0;
+			}
 
-            if (arg.GetType().IsEnum)
-            {
-                arg = Convert.ChangeType(arg, arg.GetType().GetEnumUnderlyingType());
-            }
+			if (arg.GetType().IsEnum)
+			{
+				arg = Convert.ChangeType(arg, arg.GetType().GetEnumUnderlyingType());
+			}
 
-            if (arg is string)
-            {
-                var str = (string)Convert.ChangeType(arg, typeof(string));
-                SetResultString(context, str);
+			if (arg is string)
+			{
+				var str = (string)Convert.ChangeType(arg, typeof(string));
+				SetResultString(context, str);
 
-                return;
-            }
-            else if (arg is InputArgument ia)
-            {
-                SetResultInternal(context, ia.Value);
+				return;
+			}
+			else if (arg is InputArgument ia)
+			{
+				SetResultInternal(context, ia.Value);
 
-                return;
-            }
+				return;
+			}
 
-            if (Marshal.SizeOf(arg.GetType()) <= 8)
-            {
-                SetResultUnsafe(context, arg);
-            }
-        }
+			if (Marshal.SizeOf(arg.GetType()) <= 8)
+			{
+				SetResultUnsafe(context, arg);
+			}
+		}
 
 		[SecurityCritical]
 		internal unsafe void PushUnsafe(fxScriptContext* cxt, object arg)
@@ -285,14 +285,14 @@ namespace CounterStrikeSharp.API.Core
 			Marshal.StructureToPtr(arg, new IntPtr(cxt->functionData + (8 * cxt->numArguments)), true);
 		}
 
-        [SecurityCritical]
-        internal unsafe void SetResultUnsafe(fxScriptContext* cxt, object arg)
-        {
-            *(long*)(&cxt->result[0]) = 0;
-            Marshal.StructureToPtr(arg, new IntPtr(cxt->result), true);
-        }
+		[SecurityCritical]
+		internal unsafe void SetResultUnsafe(fxScriptContext* cxt, object arg)
+		{
+			*(long*)(&cxt->result[0]) = 0;
+			Marshal.StructureToPtr(arg, new IntPtr(cxt->result), true);
+		}
 
-        [SecurityCritical]
+		[SecurityCritical]
 		internal unsafe void PushString(string str)
 		{
 			fixed (fxScriptContext* cxt = &m_extContext)
@@ -304,50 +304,17 @@ namespace CounterStrikeSharp.API.Core
 		[SecurityCritical]
 		internal unsafe void PushString(fxScriptContext* cxt, string str)
 		{
-			var ptr = IntPtr.Zero;
-
-			if (str != null)
-			{
-				var b = Encoding.UTF8.GetBytes(str);
-
-				ptr = Marshal.AllocHGlobal(b.Length + 1);
-
-				Marshal.Copy(b, 0, ptr, b.Length);
-				Marshal.WriteByte(ptr, b.Length, 0);
-
-				ms_finalizers.Enqueue(() => Free(ptr));
-			}
-
-			unsafe
-			{
-				*(IntPtr*)(&cxt->functionData[8 * cxt->numArguments]) = ptr;
-			}
-
+			var ptr = StringMarshaler.ManagedToNative(str, ms_finalizers);
+			*(IntPtr*)(&cxt->functionData[8 * cxt->numArguments]) = ptr;
 			cxt->numArguments++;
 		}
 
-        [SecurityCritical]
-        internal unsafe void SetResultString(fxScriptContext* cxt, string str)
-        {
-            var ptr = IntPtr.Zero;
-
-            if (str != null)
-            {
-                var b = Encoding.UTF8.GetBytes(str);
-
-                ptr = Marshal.AllocHGlobal(b.Length + 1);
-
-                Marshal.Copy(b, 0, ptr, b.Length);
-                Marshal.WriteByte(ptr, b.Length, 0);
-
-                ms_finalizers.Enqueue(() => Free(ptr));
-            }
-
-            unsafe
-            {
-                *(IntPtr*)(&cxt->result[8]) = ptr;
-            }
-        }
+		[SecurityCritical]
+		internal unsafe void SetResultString(fxScriptContext* cxt, string str)
+		{
+			var ptr = StringMarshaler.ManagedToNative(str, ms_finalizers);
+			*(IntPtr*)(&cxt->result[0]) = ptr;
+		}
 
 		[SecuritySafeCritical]
 		private void Free(IntPtr ptr)
@@ -427,21 +394,7 @@ namespace CounterStrikeSharp.API.Core
 			if (type == typeof(string))
 			{
 				var nativeUtf8 = *(IntPtr*)&ptr[0];
-
-				if (nativeUtf8 == IntPtr.Zero)
-				{
-					return null;
-				}
-
-				var len = 0;
-				while (Marshal.ReadByte(nativeUtf8, len) != 0)
-				{
-					++len;
-				}
-
-				var buffer = new byte[len];
-				Marshal.Copy(nativeUtf8, buffer, 0, buffer.Length);
-				return Encoding.UTF8.GetString(buffer);
+				return StringMarshaler.NativeToManaged(nativeUtf8);
 			}
 
 			if (typeof(NativeObject).IsAssignableFrom(type))
@@ -510,6 +463,10 @@ namespace CounterStrikeSharp.API.Core
 				{
 					cb();
 				}
+
+				// 定期的なキャッシュメンテナンス
+				// 800エントリを超えた場合は自動的にクリア
+				StringMarshaler.ClearCacheIfNeeded(800);
 			}
 		}
 
