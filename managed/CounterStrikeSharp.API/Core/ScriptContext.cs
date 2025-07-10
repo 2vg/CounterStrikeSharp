@@ -24,12 +24,14 @@
  */
 
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 using CounterStrikeSharp.API.Modules.Utils;
+using Utf8StringInterpolation;
 
 namespace CounterStrikeSharp.API.Core
 {
@@ -50,8 +52,8 @@ namespace CounterStrikeSharp.API.Core
 
 		public ulong nativeIdentifier;
 		public fixed byte functionData[8 * 32];
-        public fixed byte result[8];
-    }
+		public fixed byte result[8];
+	}
 
 	public class ScriptContext
 	{
@@ -67,14 +69,14 @@ namespace CounterStrikeSharp.API.Core
 			}
 		}
 
-        public unsafe ScriptContext()
+		public unsafe ScriptContext()
 		{
 		}
 
-        public unsafe ScriptContext(fxScriptContext* context)
-        {
-            m_extContext = *context;
-        }
+		public unsafe ScriptContext(fxScriptContext* context)
+		{
+			m_extContext = *context;
+		}
 
 		private readonly ConcurrentQueue<Action> ms_finalizers = new ConcurrentQueue<Action>();
 
@@ -82,9 +84,9 @@ namespace CounterStrikeSharp.API.Core
 
 		internal object Lock => ms_lock;
 
-		internal fxScriptContext m_extContext = new fxScriptContext();
+		public fxScriptContext m_extContext = new fxScriptContext();
 
-        internal bool isCleanupLocked = false;
+		internal bool isCleanupLocked = false;
 
 		[SecuritySafeCritical]
 		public void Reset()
@@ -97,23 +99,23 @@ namespace CounterStrikeSharp.API.Core
 		{
 			m_extContext.numArguments = 0;
 			m_extContext.numResults = 0;
-            m_extContext.hasError = 0;
-            //CleanUp();
-        }
+			m_extContext.hasError = 0;
+			//CleanUp();
+		}
 
 		[SecuritySafeCritical]
 		public void Invoke()
 		{
-            if (!isCleanupLocked)
-            {
-                isCleanupLocked = true;
-                InvokeNativeInternal();
-                GlobalCleanUp();
-                isCleanupLocked = false;
-                return;
-            }
+			if (!isCleanupLocked)
+			{
+				isCleanupLocked = true;
+				InvokeNativeInternal();
+				GlobalCleanUp();
+				isCleanupLocked = false;
+				return;
+			}
 
-            InvokeNativeInternal();
+			InvokeNativeInternal();
 		}
 
 		[SecurityCritical]
@@ -153,13 +155,13 @@ namespace CounterStrikeSharp.API.Core
 			PushInternal(arg);
 		}
 
-        [SecuritySafeCritical]
+		[SecuritySafeCritical]
 		public unsafe void SetResult(object arg, fxScriptContext* cxt)
 		{
-            SetResultInternal(cxt, arg);
+			SetResultInternal(cxt, arg);
 		}
 
-        [SecurityCritical]
+		[SecurityCritical]
 		private unsafe void PushInternal(object arg)
 		{
 			fixed (fxScriptContext* context = &m_extContext)
@@ -217,15 +219,15 @@ namespace CounterStrikeSharp.API.Core
 
 				return;
 			}
-            else if (arg is IMarshalToNative marshalToNative)
-            {
-                foreach (var value in marshalToNative.GetNativeObject())
-                {
-                    Push(context ,value);
-                }
+			else if (arg is IMarshalToNative marshalToNative)
+			{
+				foreach (var value in marshalToNative.GetNativeObject())
+				{
+					Push(context, value);
+				}
 
-                return;
-            }
+				return;
+			}
 			else if (arg is NativeObject nativeObject)
 			{
 				Push(context, (InputArgument)nativeObject);
@@ -245,38 +247,38 @@ namespace CounterStrikeSharp.API.Core
 			context->numArguments++;
 		}
 
-        [SecurityCritical]
-        internal unsafe void SetResultInternal(fxScriptContext* context, object arg)
-        {
-            if (arg == null)
-            {
-                arg = 0;
-            }
+		[SecurityCritical]
+		internal unsafe void SetResultInternal(fxScriptContext* context, object arg)
+		{
+			if (arg == null)
+			{
+				arg = 0;
+			}
 
-            if (arg.GetType().IsEnum)
-            {
-                arg = Convert.ChangeType(arg, arg.GetType().GetEnumUnderlyingType());
-            }
+			if (arg.GetType().IsEnum)
+			{
+				arg = Convert.ChangeType(arg, arg.GetType().GetEnumUnderlyingType());
+			}
 
-            if (arg is string)
-            {
-                var str = (string)Convert.ChangeType(arg, typeof(string));
-                SetResultString(context, str);
+			if (arg is string)
+			{
+				var str = (string)Convert.ChangeType(arg, typeof(string));
+				SetResultString(context, str);
 
-                return;
-            }
-            else if (arg is InputArgument ia)
-            {
-                SetResultInternal(context, ia.Value);
+				return;
+			}
+			else if (arg is InputArgument ia)
+			{
+				SetResultInternal(context, ia.Value);
 
-                return;
-            }
+				return;
+			}
 
-            if (Marshal.SizeOf(arg.GetType()) <= 8)
-            {
-                SetResultUnsafe(context, arg);
-            }
-        }
+			if (Marshal.SizeOf(arg.GetType()) <= 8)
+			{
+				SetResultUnsafe(context, arg);
+			}
+		}
 
 		[SecurityCritical]
 		internal unsafe void PushUnsafe(fxScriptContext* cxt, object arg)
@@ -285,14 +287,14 @@ namespace CounterStrikeSharp.API.Core
 			Marshal.StructureToPtr(arg, new IntPtr(cxt->functionData + (8 * cxt->numArguments)), true);
 		}
 
-        [SecurityCritical]
-        internal unsafe void SetResultUnsafe(fxScriptContext* cxt, object arg)
-        {
-            *(long*)(&cxt->result[0]) = 0;
-            Marshal.StructureToPtr(arg, new IntPtr(cxt->result), true);
-        }
+		[SecurityCritical]
+		internal unsafe void SetResultUnsafe(fxScriptContext* cxt, object arg)
+		{
+			*(long*)(&cxt->result[0]) = 0;
+			Marshal.StructureToPtr(arg, new IntPtr(cxt->result), true);
+		}
 
-        [SecurityCritical]
+		[SecurityCritical]
 		internal unsafe void PushString(string str)
 		{
 			fixed (fxScriptContext* cxt = &m_extContext)
@@ -308,12 +310,13 @@ namespace CounterStrikeSharp.API.Core
 
 			if (str != null)
 			{
-				var b = Encoding.UTF8.GetBytes(str);
+				// Use Utf8StringInterpolation for optimized UTF8 conversion
+				var utf8Bytes = Utf8String.Format($"{str}");
 
-				ptr = Marshal.AllocHGlobal(b.Length + 1);
+				ptr = Marshal.AllocHGlobal(utf8Bytes.Length + 1);
 
-				Marshal.Copy(b, 0, ptr, b.Length);
-				Marshal.WriteByte(ptr, b.Length, 0);
+				Marshal.Copy(utf8Bytes, 0, ptr, utf8Bytes.Length);
+				Marshal.WriteByte(ptr, utf8Bytes.Length, 0);
 
 				ms_finalizers.Enqueue(() => Free(ptr));
 			}
@@ -326,28 +329,29 @@ namespace CounterStrikeSharp.API.Core
 			cxt->numArguments++;
 		}
 
-        [SecurityCritical]
-        internal unsafe void SetResultString(fxScriptContext* cxt, string str)
-        {
-            var ptr = IntPtr.Zero;
+		[SecurityCritical]
+		internal unsafe void SetResultString(fxScriptContext* cxt, string str)
+		{
+			var ptr = IntPtr.Zero;
 
-            if (str != null)
-            {
-                var b = Encoding.UTF8.GetBytes(str);
+			if (str != null)
+			{
+				// Use Utf8StringInterpolation for optimized UTF8 conversion
+				var utf8Bytes = Utf8String.Format($"{str}");
 
-                ptr = Marshal.AllocHGlobal(b.Length + 1);
+				ptr = Marshal.AllocHGlobal(utf8Bytes.Length + 1);
 
-                Marshal.Copy(b, 0, ptr, b.Length);
-                Marshal.WriteByte(ptr, b.Length, 0);
+				Marshal.Copy(utf8Bytes, 0, ptr, utf8Bytes.Length);
+				Marshal.WriteByte(ptr, utf8Bytes.Length, 0);
 
-                ms_finalizers.Enqueue(() => Free(ptr));
-            }
+				ms_finalizers.Enqueue(() => Free(ptr));
+			}
 
-            unsafe
-            {
-                *(IntPtr*)(&cxt->result[8]) = ptr;
-            }
-        }
+			unsafe
+			{
+				*(IntPtr*)(&cxt->result[8]) = ptr;
+			}
+		}
 
 		[SecuritySafeCritical]
 		private void Free(IntPtr ptr)
@@ -433,15 +437,41 @@ namespace CounterStrikeSharp.API.Core
 					return null;
 				}
 
+				// Optimized string length calculation using pointer arithmetic
 				var len = 0;
-				while (Marshal.ReadByte(nativeUtf8, len) != 0)
+				var current = (byte*)nativeUtf8;
+				while (*current != 0)
 				{
 					++len;
+					++current;
 				}
 
-				var buffer = new byte[len];
-				Marshal.Copy(nativeUtf8, buffer, 0, buffer.Length);
-				return Encoding.UTF8.GetString(buffer);
+				// Use stackalloc for small strings to avoid heap allocation
+				if (len == 0)
+				{
+					return string.Empty;
+				}
+				else if (len <= 256)
+				{
+					var stackBuffer = stackalloc byte[len];
+					// Use Buffer.MemoryCopy for efficient memory copying
+					Buffer.MemoryCopy((void*)nativeUtf8, stackBuffer, len, len);
+					return Encoding.UTF8.GetString(stackBuffer, len);
+				}
+				else
+				{
+					// For larger strings, use ArrayPool to reduce GC pressure
+					var buffer = ArrayPool<byte>.Shared.Rent(len);
+					try
+					{
+						Marshal.Copy(nativeUtf8, buffer, 0, len);
+						return Encoding.UTF8.GetString(buffer, 0, len);
+					}
+					finally
+					{
+						ArrayPool<byte>.Shared.Return(buffer);
+					}
+				}
 			}
 
 			if (typeof(NativeObject).IsAssignableFrom(type))
@@ -484,19 +514,43 @@ namespace CounterStrikeSharp.API.Core
 
 
 		[SecurityCritical]
-		internal unsafe string ErrorHandler(byte* error)
+		public unsafe string ErrorHandler(byte* error)
 		{
 			if (error != null)
 			{
-				var errorStart = error;
+				// Optimized length calculation using pointer arithmetic
 				int length = 0;
-
-				for (var p = errorStart; *p != 0; p++)
+				var current = error;
+				while (*current != 0)
 				{
-					length++;
+					++length;
+					++current;
 				}
 
-				return Encoding.UTF8.GetString(errorStart, length);
+				// Handle empty error messages
+				if (length == 0)
+				{
+					return string.Empty;
+				}
+				// Use direct pointer access for small error messages to avoid heap allocation
+				else if (length <= 512)
+				{
+					return Encoding.UTF8.GetString(error, length);
+				}
+				else
+				{
+					// For larger error messages, use ArrayPool to reduce GC pressure
+					var buffer = ArrayPool<byte>.Shared.Rent(length);
+					try
+					{
+						Marshal.Copy(new IntPtr(error), buffer, 0, length);
+						return Encoding.UTF8.GetString(buffer, 0, length);
+					}
+					finally
+					{
+						ArrayPool<byte>.Shared.Return(buffer);
+					}
+				}
 			}
 
 			return "Native invocation failed.";
