@@ -24,12 +24,14 @@
  */
 
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 using CounterStrikeSharp.API.Modules.Utils;
+using Utf8StringInterpolation;
 
 namespace CounterStrikeSharp.API.Core
 {
@@ -81,7 +83,7 @@ namespace CounterStrikeSharp.API.Core
 
 		internal object Lock => ms_lock;
 
-		internal fxScriptContext m_extContext = new fxScriptContext();
+		public fxScriptContext m_extContext = new fxScriptContext();
 
 		internal bool isCleanupLocked = false;
 
@@ -306,12 +308,13 @@ namespace CounterStrikeSharp.API.Core
 
 			if (str != null)
 			{
-				var b = Encoding.UTF8.GetBytes(str);
+				// Use Utf8StringInterpolation for optimized UTF8 conversion
+				var utf8Bytes = Utf8String.Format($"{str}");
 
-				ptr = Marshal.AllocHGlobal(b.Length + 1);
+				ptr = Marshal.AllocHGlobal(utf8Bytes.Length + 1);
 
-				Marshal.Copy(b, 0, ptr, b.Length);
-				Marshal.WriteByte(ptr, b.Length, 0);
+				Marshal.Copy(utf8Bytes, 0, ptr, utf8Bytes.Length);
+				Marshal.WriteByte(ptr, utf8Bytes.Length, 0);
 
 				ms_finalizers.Enqueue(() => Free(ptr));
 			}
@@ -331,12 +334,13 @@ namespace CounterStrikeSharp.API.Core
 
 			if (str != null)
 			{
-				var b = Encoding.UTF8.GetBytes(str);
+				// Use Utf8StringInterpolation for optimized UTF8 conversion
+				var utf8Bytes = Utf8String.Format($"{str}");
 
-				ptr = Marshal.AllocHGlobal(b.Length + 1);
+				ptr = Marshal.AllocHGlobal(utf8Bytes.Length + 1);
 
-				Marshal.Copy(b, 0, ptr, b.Length);
-				Marshal.WriteByte(ptr, b.Length, 0);
+				Marshal.Copy(utf8Bytes, 0, ptr, utf8Bytes.Length);
+				Marshal.WriteByte(ptr, utf8Bytes.Length, 0);
 
 				ms_finalizers.Enqueue(() => Free(ptr));
 			}
@@ -431,15 +435,41 @@ namespace CounterStrikeSharp.API.Core
 					return null;
 				}
 
+				// Optimized string length calculation using pointer arithmetic
 				var len = 0;
-				while (Marshal.ReadByte(nativeUtf8, len) != 0)
+				var current = (byte*)nativeUtf8;
+				while (*current != 0)
 				{
 					++len;
+					++current;
 				}
 
-				var buffer = new byte[len];
-				Marshal.Copy(nativeUtf8, buffer, 0, buffer.Length);
-				return Encoding.UTF8.GetString(buffer);
+				// Use stackalloc for small strings to avoid heap allocation
+				if (len == 0)
+				{
+					return string.Empty;
+				}
+				else if (len <= 256)
+				{
+					var stackBuffer = stackalloc byte[len];
+					// Use Buffer.MemoryCopy for efficient memory copying
+					Buffer.MemoryCopy((void*)nativeUtf8, stackBuffer, len, len);
+					return Encoding.UTF8.GetString(stackBuffer, len);
+				}
+				else
+				{
+					// For larger strings, use ArrayPool to reduce GC pressure
+					var buffer = ArrayPool<byte>.Shared.Rent(len);
+					try
+					{
+						Marshal.Copy(nativeUtf8, buffer, 0, len);
+						return Encoding.UTF8.GetString(buffer, 0, len);
+					}
+					finally
+					{
+						ArrayPool<byte>.Shared.Return(buffer);
+					}
+				}
 			}
 
 			if (typeof(NativeObject).IsAssignableFrom(type))
@@ -482,19 +512,43 @@ namespace CounterStrikeSharp.API.Core
 
 
 		[SecurityCritical]
-		internal unsafe string ErrorHandler(byte* error)
+		public unsafe string ErrorHandler(byte* error)
 		{
 			if (error != null)
 			{
-				var errorStart = error;
+				// Optimized length calculation using pointer arithmetic
 				int length = 0;
-
-				for (var p = errorStart; *p != 0; p++)
+				var current = error;
+				while (*current != 0)
 				{
-					length++;
+					++length;
+					++current;
 				}
 
-				return Encoding.UTF8.GetString(errorStart, length);
+				// Handle empty error messages
+				if (length == 0)
+				{
+					return string.Empty;
+				}
+				// Use direct pointer access for small error messages to avoid heap allocation
+				else if (length <= 512)
+				{
+					return Encoding.UTF8.GetString(error, length);
+				}
+				else
+				{
+					// For larger error messages, use ArrayPool to reduce GC pressure
+					var buffer = ArrayPool<byte>.Shared.Rent(length);
+					try
+					{
+						Marshal.Copy(new IntPtr(error), buffer, 0, length);
+						return Encoding.UTF8.GetString(buffer, 0, length);
+					}
+					finally
+					{
+						ArrayPool<byte>.Shared.Return(buffer);
+					}
+				}
 			}
 
 			return "Native invocation failed.";
