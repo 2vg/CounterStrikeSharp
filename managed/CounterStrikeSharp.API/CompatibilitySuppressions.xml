@@ -51,6 +51,12 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:CounterStrikeSharp.API.Core.CItemHeavyAssaultSuit</Target>
+    <Left>.\ApiCompat\v202.dll</Left>
+    <Right>obj\Release\net8.0\CounterStrikeSharp.API.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:CounterStrikeSharp.API.Core.CMelee</Target>
     <Left>.\ApiCompat\v202.dll</Left>
     <Right>obj\Release\net8.0\CounterStrikeSharp.API.dll</Right>
@@ -243,6 +249,12 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:CounterStrikeSharp.API.Core.CSPlayerBlockingUseAction_t.k_CSPlayerBlockingUseAction_EquippingHeavyArmor</Target>
+    <Left>.\ApiCompat\v202.dll</Left>
+    <Right>obj\Release\net8.0\CounterStrikeSharp.API.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:CounterStrikeSharp.API.Core.CSPlayerBlockingUseAction_t.k_CSPlayerBlockingUseAction_EquippingParachute</Target>
     <Left>.\ApiCompat\v202.dll</Left>
     <Right>obj\Release\net8.0\CounterStrikeSharp.API.dll</Right>
@@ -268,6 +280,54 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:CounterStrikeSharp.API.Core.CSPlayerBlockingUseAction_t.k_CSPlayerBlockingUseAction_PickingUpBumpMine</Target>
+    <Left>.\ApiCompat\v202.dll</Left>
+    <Right>obj\Release\net8.0\CounterStrikeSharp.API.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:CounterStrikeSharp.API.Core.CSPlayerBlockingUseAction_t.k_CSPlayerBlockingUseAction_TakingOffHeavyArmor</Target>
+    <Left>.\ApiCompat\v202.dll</Left>
+    <Right>obj\Release\net8.0\CounterStrikeSharp.API.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:CounterStrikeSharp.API.Core.CSWeaponType.WEAPONTYPE_BREACHCHARGE</Target>
+    <Left>.\ApiCompat\v202.dll</Left>
+    <Right>obj\Release\net8.0\CounterStrikeSharp.API.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:CounterStrikeSharp.API.Core.CSWeaponType.WEAPONTYPE_BUMPMINE</Target>
+    <Left>.\ApiCompat\v202.dll</Left>
+    <Right>obj\Release\net8.0\CounterStrikeSharp.API.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:CounterStrikeSharp.API.Core.CSWeaponType.WEAPONTYPE_FISTS</Target>
+    <Left>.\ApiCompat\v202.dll</Left>
+    <Right>obj\Release\net8.0\CounterStrikeSharp.API.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:CounterStrikeSharp.API.Core.CSWeaponType.WEAPONTYPE_MELEE</Target>
+    <Left>.\ApiCompat\v202.dll</Left>
+    <Right>obj\Release\net8.0\CounterStrikeSharp.API.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:CounterStrikeSharp.API.Core.CSWeaponType.WEAPONTYPE_SHIELD</Target>
+    <Left>.\ApiCompat\v202.dll</Left>
+    <Right>obj\Release\net8.0\CounterStrikeSharp.API.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:CounterStrikeSharp.API.Core.CSWeaponType.WEAPONTYPE_TABLET</Target>
+    <Left>.\ApiCompat\v202.dll</Left>
+    <Right>obj\Release\net8.0\CounterStrikeSharp.API.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:CounterStrikeSharp.API.Core.CSWeaponType.WEAPONTYPE_ZONE_REPULSOR</Target>
     <Left>.\ApiCompat\v202.dll</Left>
     <Right>obj\Release\net8.0\CounterStrikeSharp.API.dll</Right>
   </Suppression>
@@ -963,6 +1023,12 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:CounterStrikeSharp.API.Core.CCSGameRules.get_SpawnedTerrorHuntHeavy</Target>
+    <Left>.\ApiCompat\v202.dll</Left>
+    <Right>obj\Release\net8.0\CounterStrikeSharp.API.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:CounterStrikeSharp.API.Core.CCSGOViewModel.get_OldWeaponParity</Target>
     <Left>.\ApiCompat\v202.dll</Left>
     <Right>obj\Release\net8.0\CounterStrikeSharp.API.dll</Right>
@@ -970,6 +1036,12 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:CounterStrikeSharp.API.Core.CCSGOViewModel.get_WeaponParity</Target>
+    <Left>.\ApiCompat\v202.dll</Left>
+    <Right>obj\Release\net8.0\CounterStrikeSharp.API.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:CounterStrikeSharp.API.Core.CCSPlayer_ItemServices.get_HasHeavyArmor</Target>
     <Left>.\ApiCompat\v202.dll</Left>
     <Right>obj\Release\net8.0\CounterStrikeSharp.API.dll</Right>
   </Suppression>
@@ -2541,12 +2613,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0011</DiagnosticId>
-    <Target>F:CounterStrikeSharp.API.Core.CSPlayerBlockingUseAction_t.k_CSPlayerBlockingUseAction_EquippingHeavyArmor</Target>
-    <Left>.\ApiCompat\v202.dll</Left>
-    <Right>obj\Release\net8.0\CounterStrikeSharp.API.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0011</DiagnosticId>
     <Target>F:CounterStrikeSharp.API.Core.CSPlayerBlockingUseAction_t.k_CSPlayerBlockingUseAction_MapLongUseEntity_Pickup</Target>
     <Left>.\ApiCompat\v202.dll</Left>
     <Right>obj\Release\net8.0\CounterStrikeSharp.API.dll</Right>
@@ -2565,7 +2631,7 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0011</DiagnosticId>
-    <Target>F:CounterStrikeSharp.API.Core.CSPlayerBlockingUseAction_t.k_CSPlayerBlockingUseAction_TakingOffHeavyArmor</Target>
+    <Target>F:CounterStrikeSharp.API.Core.CSWeaponType.WEAPONTYPE_UNKNOWN</Target>
     <Left>.\ApiCompat\v202.dll</Left>
     <Right>obj\Release\net8.0\CounterStrikeSharp.API.dll</Right>
   </Suppression>
