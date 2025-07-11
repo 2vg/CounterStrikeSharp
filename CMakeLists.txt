@@ -43,6 +43,8 @@ set(SOURCE_FILES
     src/core/coreconfig.cpp
     src/core/gameconfig.h
     src/core/gameconfig.cpp
+    src/core/gameconfig_updater.h
+    src/core/gameconfig_updater.cpp
     src/core/log.h
     src/core/log.cpp
     src/scripting/script_engine.h
@@ -84,6 +86,8 @@ set(SOURCE_FILES
     src/scripting/natives/natives_entities.cpp
     src/scripting/natives/natives_voice.cpp
     src/scripting/natives/natives_metamod.cpp
+    src/scripting/natives/natives_cvariant.cpp
+    src/scripting/natives/natives_cutil.cpp
     src/core/managers/entity_manager.cpp
     src/core/managers/entity_manager.h
     src/core/managers/chat_manager.cpp

@@ -67,6 +67,11 @@ namespace CounterStrikeSharp.API.Core
 
         [JsonPropertyName("MemoryManagerInterval")]
         public int MemoryManagerInterval { get; set; } = 10000;
+        [JsonPropertyName("AutoUpdateEnabled")]
+        public bool AutoUpdateEnabled { get; set; } = true;
+
+        [JsonPropertyName("AutoUpdateURL")]
+        public string AutoUpdateURL { get; set; } = "http://gamedata.cssharp.dev";
     }
 
     /// <summary>
@@ -172,7 +177,7 @@ namespace CounterStrikeSharp.API.Core
                 {
                     var data = JsonSerializer.Deserialize<CoreConfigData>(File.ReadAllText(_coreConfigPath),
                         new JsonSerializerOptions() { ReadCommentHandling = JsonCommentHandling.Skip });
-    
+
                     if (data != null)
                     {
                         _coreConfig = data;

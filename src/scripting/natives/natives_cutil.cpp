@@ -1,4 +1,4 @@
-﻿/*
+/*
  *  This file is part of CounterStrikeSharp.
  *  CounterStrikeSharp is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -14,20 +14,28 @@
  *  along with CounterStrikeSharp.  If not, see <https://www.gnu.org/licenses/>. *
  */
 
-using System;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Security;
+#include <public/entity2/entitysystem.h>
 
-namespace CounterStrikeSharp.API.Core
+#include <ios>
+#include <sstream>
+
+#include "scripting/autonative.h"
+#include "scripting/script_engine.h"
+
+#include "utlsymbollarge.h"
+
+namespace counterstrikesharp {
+
+const char* GetStringFromSymbolLarge(ScriptContext& script_context)
 {
-    public static class Helpers
+    CUtlSymbolLarge* pSymbolLarge = script_context.GetArgument<CUtlSymbolLarge*>(0);
+    if (!pSymbolLarge)
     {
-        private const string dllPath = "counterstrikesharp";
-
-        [SecurityCritical]
-        [DllImport(dllPath, EntryPoint = "InvokeNative")]
-        public static extern void InvokeNative(IntPtr ptr);
+        script_context.ThrowNativeError("Invalid CUtlSymbolLarge pointer");
+        return "";
     }
+    return pSymbolLarge->String();
 }
+
+REGISTER_NATIVES(cutil, { ScriptEngine::RegisterNativeHandler("GET_STRING_FROM_SYMBOL_LARGE", GetStringFromSymbolLarge); })
+} // namespace counterstrikesharp
