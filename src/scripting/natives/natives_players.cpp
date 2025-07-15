@@ -25,26 +25,29 @@ static void* CreateConnectedPlayersIterator(ScriptContext& script_context)
 {
     auto iterator = new PlayerManager::ConnectedPlayerIterator(
         globals::playerManager.GetConnectedPlayersIterator());
-    return iterator;
+    return static_cast<void*>(iterator);
 }
 
 static bool IteratorHasNext(ScriptContext& script_context)
 {
-    auto iterator = script_context.GetArgument<PlayerManager::ConnectedPlayerIterator*>(0);
+    auto iterator = static_cast<PlayerManager::ConnectedPlayerIterator*>(
+        script_context.GetArgument<void*>(0));
     if (iterator == nullptr) return false;
     return iterator->HasNext();
 }
 
 static int IteratorGetCurrentSlot(ScriptContext& script_context)
 {
-    auto iterator = script_context.GetArgument<PlayerManager::ConnectedPlayerIterator*>(0);
+    auto iterator = static_cast<PlayerManager::ConnectedPlayerIterator*>(
+        script_context.GetArgument<void*>(0));
     if (iterator == nullptr) return -1;
     return iterator->GetCurrentSlot();
 }
 
 static void IteratorMoveNext(ScriptContext& script_context)
 {
-    auto iterator = script_context.GetArgument<PlayerManager::ConnectedPlayerIterator*>(0);
+    auto iterator = static_cast<PlayerManager::ConnectedPlayerIterator*>(
+        script_context.GetArgument<void*>(0));
     if (iterator != nullptr) {
         iterator->MoveNext();
     }
@@ -52,7 +55,8 @@ static void IteratorMoveNext(ScriptContext& script_context)
 
 static void DestroyIterator(ScriptContext& script_context)
 {
-    auto iterator = script_context.GetArgument<PlayerManager::ConnectedPlayerIterator*>(0);
+    auto iterator = static_cast<PlayerManager::ConnectedPlayerIterator*>(
+        script_context.GetArgument<void*>(0));
     if (iterator != nullptr) {
         delete iterator;
     }
