@@ -15,6 +15,7 @@
 #include "mm_plugin.h"
 
 #include <cstdio>
+#include <chrono>
 
 #include "core/coreconfig.h"
 #include "core/game_system.h"
@@ -221,6 +222,10 @@ void CounterStrikeSharpMMPlugin::Hook_GameFrame(bool simulating, bool bFirstTick
      * false | game is not ticking
      */
     VPROF_BUDGET("CS#::Hook_GameFrame", "CS# On Frame");
+    
+    // フレーム全体の C# コスト測定開始
+    auto frame_start = std::chrono::high_resolution_clock::now();
+    
     globals::timerSystem.OnGameFrame(simulating);
 
     std::vector<std::function<void()>> out_list(1024);
@@ -247,6 +252,16 @@ void CounterStrikeSharpMMPlugin::Hook_GameFrame(bool simulating, bool bFirstTick
         {
             callback();
         }
+    }
+    
+    // フレーム全体の C# コスト測定終了
+    auto frame_end = std::chrono::high_resolution_clock::now();
+    auto frame_duration = std::chrono::duration_cast<std::chrono::microseconds>(frame_end - frame_start);
+    
+    // 1ms (1000μs) 以上のフレームのみログ出力
+    if (frame_duration.count() > 1000)
+    {
+        CSSHARP_CORE_INFO("[C# FRAME] {:.2f} ms", frame_duration.count() / 1000.0);
     }
 }
 
