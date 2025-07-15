@@ -140,6 +140,33 @@ class PlayerManager : public GlobalClass
     friend class CPlayer;
 
   public:
+    class ConnectedPlayerIterator {
+    private:
+        CPlayer* m_players;
+        int m_current_slot;
+        int m_max_clients;
+        
+        void FindNextConnected() {
+            while (m_current_slot <= m_max_clients &&
+                   (m_players == nullptr || !m_players[m_current_slot].IsConnected())) {
+                m_current_slot++;
+            }
+        }
+        
+    public:
+        ConnectedPlayerIterator(CPlayer* players, int start, int max_clients)
+            : m_players(players), m_current_slot(start), m_max_clients(max_clients) {
+            FindNextConnected();
+        }
+        
+        bool HasNext() const { return m_current_slot <= m_max_clients; }
+        int GetCurrentSlot() const { return m_current_slot; }
+        void MoveNext() {
+            m_current_slot++;
+            FindNextConnected();
+        }
+    };
+
     PlayerManager();
     void OnStartup() override;
     void OnAllInitialized() override;
@@ -167,6 +194,10 @@ class PlayerManager : public GlobalClass
     int MaxClients() const;
     CPlayer* GetPlayerBySlot(int client) const;
     CPlayer* GetClientOfUserId(int user_id) const;
+    
+    ConnectedPlayerIterator GetConnectedPlayersIterator() {
+        return ConnectedPlayerIterator(m_players, 0, m_max_clients - 1);
+    }
 
   private:
     void InvalidatePlayer(CPlayer* pPlayer) const;
