@@ -59,6 +59,7 @@ TimerSystem::TimerSystem()
 {
     m_has_map_ticked = false;
     m_has_map_simulated = false;
+    m_map_change_timers_removed = false;
     m_last_ticked_time = 0.0f;
 }
 
@@ -99,6 +100,7 @@ void TimerSystem::OnStartupServer()
 
     m_has_map_ticked = false;
     m_has_map_simulated = false;
+    m_map_change_timers_removed = false;
 }
 
 void TimerSystem::OnGameFrame(bool simulating)
@@ -188,6 +190,11 @@ void TimerSystem::RunFrame()
 
 void TimerSystem::RemoveMapChangeTimers()
 {
+    if (m_map_change_timers_removed)
+    {
+        return;
+    }
+
     auto isMapChangeTimer = [](timers::Timer* timer) {
         bool shouldRemove = timer->m_flags & TIMER_FLAG_NO_MAPCHANGE;
         if (shouldRemove)
@@ -199,6 +206,8 @@ void TimerSystem::RemoveMapChangeTimers()
 
     std::erase_if(m_once_off_timers, isMapChangeTimer);
     std::erase_if(m_repeat_timers, isMapChangeTimer);
+
+    m_map_change_timers_removed = true;
 }
 
 timers::Timer* TimerSystem::CreateTimer(float interval, CallbackT callback, int flags)

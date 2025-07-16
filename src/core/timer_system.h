@@ -83,6 +83,7 @@ class TimerSystem : public GlobalClass
   private:
     bool m_has_map_ticked = false;
     bool m_has_map_simulated = false;
+    bool m_map_change_timers_removed = false;
     float m_last_ticked_time = 0.0f;
     ScriptCallback* m_on_tick_callback_ = nullptr;
     ScriptCallback* on_map_end_callback = nullptr;
