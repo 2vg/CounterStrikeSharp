@@ -59,6 +59,7 @@ TimerSystem::TimerSystem()
 {
     m_has_map_ticked = false;
     m_has_map_simulated = false;
+    m_map_change_timers_removed = false;
     m_last_ticked_time = 0.0f;
 }
 
@@ -82,7 +83,7 @@ void TimerSystem::OnLevelEnd()
         on_map_end_callback->Execute();
     }
 
-    globals::timerSystem.RemoveMapChangeTimers();
+    // removed the call that RemoveMapChangeTimers() here
 
     m_has_map_simulated = false;
     m_has_map_ticked = false;
@@ -97,8 +98,13 @@ void TimerSystem::OnStartupServer()
         CSSHARP_CORE_TRACE("name={0}", "LevelShutdown");
     }
 
+    // Move the call to RemoveMapChangeTimers() here
+    // This is similar to the process for cs2fixes
+    globals::timerSystem.RemoveMapChangeTimers();
+
     m_has_map_ticked = false;
     m_has_map_simulated = false;
+    m_map_change_timers_removed = false;
 }
 
 void TimerSystem::OnGameFrame(bool simulating)
@@ -188,17 +194,28 @@ void TimerSystem::RunFrame()
 
 void TimerSystem::RemoveMapChangeTimers()
 {
-    auto isMapChangeTimer = [](timers::Timer* timer) {
-        bool shouldRemove = timer->m_flags & TIMER_FLAG_NO_MAPCHANGE;
-        if (shouldRemove)
-        {
-            delete timer;
-        }
-        return shouldRemove;
-    };
+    if (m_map_change_timers_removed)
+    {
+        return;
+    }
 
-    std::erase_if(m_once_off_timers, isMapChangeTimer);
-    std::erase_if(m_repeat_timers, isMapChangeTimer);
+    for (auto* timer : m_once_off_timers)
+    {
+        if (timer->m_flags & TIMER_FLAG_NO_MAPCHANGE)
+        {
+            timer->m_kill_me = true;
+        }
+    }
+
+    for (auto* timer : m_repeat_timers)
+    {
+        if (timer->m_flags & TIMER_FLAG_NO_MAPCHANGE)
+        {
+            timer->m_kill_me = true;
+        }
+    }
+
+    m_map_change_timers_removed = true;
 }
 
 timers::Timer* TimerSystem::CreateTimer(float interval, CallbackT callback, int flags)

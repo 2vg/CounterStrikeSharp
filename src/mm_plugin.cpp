@@ -19,6 +19,7 @@
 #include "core/coreconfig.h"
 #include "core/game_system.h"
 #include "core/gameconfig.h"
+#include "core/gameconfig_updater.h"
 #include "core/global_listener.h"
 #include "core/log.h"
 #include "core/managers/entity_manager.h"
@@ -117,6 +118,14 @@ bool CounterStrikeSharpMMPlugin::Load(PluginId id, ISmmAPI* ismm, char* error, s
 
     CSSHARP_CORE_INFO("CoreConfig loaded.");
 
+    if (globals::coreConfig->AutoUpdateEnabled)
+    {
+        if (!update::TryUpdateGameConfig())
+        {
+            CSSHARP_CORE_ERROR("Failed to update game config.");
+        }
+    }
+
     auto gamedata_path = std::string(utils::GamedataDirectory() + "/gamedata.json");
     globals::gameConfig = new CGameConfig(gamedata_path);
     char conf_error[255] = "";
@@ -212,6 +221,7 @@ void CounterStrikeSharpMMPlugin::Hook_GameFrame(bool simulating, bool bFirstTick
      * false | game is not ticking
      */
     VPROF_BUDGET("CS#::Hook_GameFrame", "CS# On Frame");
+    
     globals::timerSystem.OnGameFrame(simulating);
 
     std::vector<std::function<void()>> out_list(1024);

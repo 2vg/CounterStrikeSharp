@@ -61,6 +61,17 @@ namespace CounterStrikeSharp.API.Core
 
         [JsonPropertyName("UnlockConVars")]
         public bool UnlockConVars { get; set; } = true;
+
+        [JsonPropertyName("EnableMemoryManager")]
+        public bool EnableMemoryManager { get; set; } = true;
+
+        [JsonPropertyName("MemoryManagerInterval")]
+        public int MemoryManagerInterval { get; set; } = 10000;
+        [JsonPropertyName("AutoUpdateEnabled")]
+        public bool AutoUpdateEnabled { get; set; } = true;
+
+        [JsonPropertyName("AutoUpdateURL")]
+        public string AutoUpdateURL { get; set; } = "http://gamedata.cssharp.dev";
     }
 
     /// <summary>
@@ -115,6 +126,15 @@ namespace CounterStrikeSharp.API.Core
 
         public static bool UnlockConVars => _coreConfig.UnlockConVars;
 
+        /// <summary>
+        /// Enable the <b>EXPERIMENTAL</b> MemoryManager.
+        /// </summary>
+        public static bool EnableMemoryManager => _coreConfig.EnableMemoryManager;
+
+        /// <summary>
+        /// The interval (in milliseconds) at which the memory manager checks for leaking references.
+        /// </summary>
+        public static int MemoryManagerInterval => _coreConfig.MemoryManagerInterval;
     }
 
     public partial class CoreConfig : IStartupService
@@ -157,7 +177,7 @@ namespace CounterStrikeSharp.API.Core
                 {
                     var data = JsonSerializer.Deserialize<CoreConfigData>(File.ReadAllText(_coreConfigPath),
                         new JsonSerializerOptions() { ReadCommentHandling = JsonCommentHandling.Skip });
-    
+
                     if (data != null)
                     {
                         _coreConfig = data;

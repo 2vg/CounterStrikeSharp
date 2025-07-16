@@ -438,6 +438,7 @@ INetChannelInfo* CPlayer::GetNetInfo() const { return globals::engine->GetPlayer
 PlayerManager::PlayerManager()
 {
     m_players = new CPlayer[66];
+    m_max_clients = 65;
     m_player_count = 0;
     m_user_id_lookup = new int[USHRT_MAX + 1];
     memset(m_user_id_lookup, 0, sizeof(int) * (USHRT_MAX + 1));

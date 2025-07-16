@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## What's Changed in v1.0.327
+* fix: update core.example.json ([a8eff60](https://github.com/roflmuffin/CounterStrikeSharp/commit/a8eff60d0ba5c0102028dfd357206a5061bcc124))
+
+## What's Changed in v1.0.326
+* fix: remove requirement for https for game config updates in [#930](https://github.com/roflmuffin/CounterStrikeSharp/pull/930) ([ffb274d](https://github.com/roflmuffin/CounterStrikeSharp/commit/ffb274d636ea5ec6ff389644853005e46f42a756))
+* Support operating `bytes` type protobuf field by [@samyycX](https://github.com/samyycX) in [#922](https://github.com/roflmuffin/CounterStrikeSharp/pull/922) ([b5303d1](https://github.com/roflmuffin/CounterStrikeSharp/commit/b5303d15ab31beb6ea1299f9c7fd0e8cf4b5ca15))
+* fix: prefix dump_schema command to enable compat with Source2 Schema Dumper by GAMMACASE ([1a521ec](https://github.com/roflmuffin/CounterStrikeSharp/commit/1a521ec3bb10178d86d22fff6d4389cb4d8431ba))
+
+## What's Changed in v1.0.325
+* fix: revert internal stack trace for performance in [#927](https://github.com/roflmuffin/CounterStrikeSharp/pull/927) ([260015d](https://github.com/roflmuffin/CounterStrikeSharp/commit/260015d765f7feea8eb75773cc307dfe21c3a084))
+
+## What's Changed in v1.0.324
+* feat: Add Automatic Gamedata Updates in [#925](https://github.com/roflmuffin/CounterStrikeSharp/pull/925) ([8ab61b0](https://github.com/roflmuffin/CounterStrikeSharp/commit/8ab61b00e8d6e1321b11a0a1c132728ae227c611))
+* chore(dev): add node to devcontainer ([c746c4e](https://github.com/roflmuffin/CounterStrikeSharp/commit/c746c4e2e789e1f8e7fff255630d53549557b2ac))
+* chore(dev): create release script ([32d3e18](https://github.com/roflmuffin/CounterStrikeSharp/commit/32d3e1865792c57510ce69e502bffffc8bc9cdd9))
+
+## What's Changed in v1.0.323
+* feat: update schema for game update 1.40.8.5 (03.07.2025) in [#921](https://github.com/roflmuffin/CounterStrikeSharp/pull/921) ([22809e3](https://github.com/roflmuffin/CounterStrikeSharp/commit/22809e3ec6aebacfa707f79ac39a2d740f92d23b))
+* chore(dev): add build & sync commands for .NET API ([87d1973](https://github.com/roflmuffin/CounterStrikeSharp/commit/87d197309be882fd55293f2c1933226d60ec8eff))
+* chore(dev): add build & sync commands to vscode tasks ([e6bfb79](https://github.com/roflmuffin/CounterStrikeSharp/commit/e6bfb7939d13769f0854e2443ae1c027a802b001))
+* chore(deps): bump libraries/metamod-source from `6091f15` to `b17dc63` by [@dependabot[bot]](https://github.com/dependabot[bot]) in [#906](https://github.com/roflmuffin/CounterStrikeSharp/pull/906) ([0ae9227](https://github.com/roflmuffin/CounterStrikeSharp/commit/0ae9227d730dfaaf05181407fb44e2ef7bb0f229))
+
+## What's Changed in v1.0.322
+* Implement CVariant functions by [@zonical](https://github.com/zonical) in [#905](https://github.com/roflmuffin/CounterStrikeSharp/pull/905) ([124ffac](https://github.com/roflmuffin/CounterStrikeSharp/commit/124ffac7a959b1d769a7b9ab570a6706f7406d3e))
+
+## What's Changed in v1.0.321
+* Continued: Fixes for game update 1.40.8.5 (03.07.2025) by [@ianlucas](https://github.com/ianlucas) in [#917](https://github.com/roflmuffin/CounterStrikeSharp/pull/917) ([018bcba](https://github.com/roflmuffin/CounterStrikeSharp/commit/018bcba6556001c26ea0bdaf8b048008bf540597))
+
+## What's Changed in v1.0.320
+* Fixes for game update 1.40.8.5 (03.07.2025) by [@AspectUnk](https://github.com/AspectUnk) in [#911](https://github.com/roflmuffin/CounterStrikeSharp/pull/911) ([bebeedf](https://github.com/roflmuffin/CounterStrikeSharp/commit/bebeedf27221e8ecffbab420272058746cc2fedd))
+
+## New Contributors
+* [@AspectUnk](https://github.com/AspectUnk) made their first contribution in [#911](https://github.com/roflmuffin/CounterStrikeSharp/pull/911)
+
 ## What's Changed in v1.0.319
 * Improve FunctionReference trace logging with real user stack origin by [@SlynxCZ](https://github.com/SlynxCZ) in [#895](https://github.com/roflmuffin/CounterStrikeSharp/pull/895) ([6f66316](https://github.com/roflmuffin/CounterStrikeSharp/commit/6f663164ee887bd1fd67c3bb3aef62314ada99e2))
 
