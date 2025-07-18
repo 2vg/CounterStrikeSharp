@@ -14,6 +14,7 @@
  *  along with CounterStrikeSharp.  If not, see <https://www.gnu.org/licenses/>. *
  */
 
+using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Memory;
 using CounterStrikeSharp.API.Modules.Utils;
 using System;
@@ -27,6 +28,8 @@ using CounterStrikeSharp.API.Modules.Commands.Targeting;
 using CounterStrikeSharp.API.Modules.Entities;
 using Microsoft.Extensions.Logging;
 using ZLinq;
+using Cysharp.Text;
+using Utf8StringInterpolation;
 
 namespace CounterStrikeSharp.API
 {
@@ -40,8 +43,10 @@ namespace CounterStrikeSharp.API
 
         public static IEnumerable<T> FlagsToList<T>(this T flags) where T : Enum
         {
-            return Enum.GetValues(typeof(T)).Cast<T>()
-                .Where(x => flags.HasFlag(x)).AsEnumerable();
+            var values = Enum.GetValues(typeof(T)).Cast<T>().ToArray();
+            return values.AsValueEnumerable()
+                .Where(x => flags.HasFlag(x))
+                .ToArray();
         }
 
         public static T? GetEntityFromIndex<T>(int index) where T : CEntityInstance
@@ -83,7 +88,8 @@ namespace CounterStrikeSharp.API
 
         public static CCSPlayerController? GetPlayerFromSteamId(ulong steamId)
         {
-            return Utilities.GetPlayers().FirstOrDefault(player => player.AuthorizedSteamID == (SteamID)steamId);
+            return Utilities.GetPlayers().AsValueEnumerable()
+                .FirstOrDefault(player => player.AuthorizedSteamID == (SteamID)steamId);
         }
 
         public static TargetResult ProcessTargetString(string pattern, CCSPlayerController player)
@@ -98,18 +104,12 @@ namespace CounterStrikeSharp.API
 
         public static bool RemoveItemByDesignerName(this CCSPlayerController player, string designerName, bool shouldRemoveEntity)
         {
-            CHandle<CBasePlayerWeapon>? item = null;
             if (player.PlayerPawn.Value == null || player.PlayerPawn.Value.WeaponServices == null) return false;
 
-            foreach (var weapon in player.PlayerPawn.Value.WeaponServices.MyWeapons)
-            {
-                if (weapon is not { IsValid: true, Value.IsValid: true })
-                    continue;
-                if (weapon.Value.DesignerName != designerName)
-                    continue;
-
-                item = weapon;
-            }
+            var item = player.PlayerPawn.Value.WeaponServices.MyWeapons
+                .AsValueEnumerable()
+                .Where(weapon => weapon is { IsValid: true, Value.IsValid: true })
+                .FirstOrDefault(weapon => weapon.Value?.DesignerName == designerName);
 
             if (item != null && item.Value != null)
             {
@@ -150,19 +150,82 @@ namespace CounterStrikeSharp.API
         /// </summary>
         public static List<CCSPlayerController> GetPlayers()
         {
-            List<CCSPlayerController> players = new();
+            // Use ZLinq for more efficient collection building
+            //return ValueEnumerable.Range(0, Server.MaxPlayers)
+            //    .Select(GetPlayerFromSlot)
+            //    .Where(controller => controller != null && controller.IsValid &&
+            //           controller.Connected == PlayerConnectedState.PlayerConnected)
+            //    .Select(controller => controller!) // Non-null assertion after null check
+            //    .ToList();
+            return GetPlayers2();
+        }
 
-            for (int i = 0; i < Server.MaxPlayers; i++)
+        /// <summary>
+        /// Returns an enumerable of <see cref="CCSPlayerController"/> that are valid and connected.
+        /// This method uses an iterator pattern for optimal performance and memory efficiency.
+        /// </summary>
+        public static IEnumerable<CCSPlayerController> GetPlayersEnumerable()
+        {
+            var iteratorPtr = CreateConnectedPlayersIterator();
+
+            try
             {
-                var controller = GetPlayerFromSlot(i);
+                while (IteratorHasNext(iteratorPtr))
+                {
+                    int slot = IteratorGetCurrentSlot(iteratorPtr);
+                    var controller = GetPlayerFromSlot(slot);
 
-                if (controller == null || !controller.IsValid || controller.Connected != PlayerConnectedState.PlayerConnected)
-                    continue;
+                    if (controller != null && controller.IsValid &&
+                        controller.Connected == PlayerConnectedState.PlayerConnected)
+                    {
+                        yield return controller;
+                    }
 
-                players.Add(controller);
+                    IteratorMoveNext(iteratorPtr);
+                }
             }
+            finally
+            {
+                DestroyIterator(iteratorPtr);
+            }
+        }
 
-            return players;
+        /// <summary>
+        /// Executes an action for each connected player. This is the most efficient method for player iteration.
+        /// </summary>
+        /// <param name="action">The action to execute for each player</param>
+        public static void ForEachPlayer(Action<CCSPlayerController> action)
+        {
+            var iteratorPtr = CreateConnectedPlayersIterator();
+
+            try
+            {
+                while (IteratorHasNext(iteratorPtr))
+                {
+                    int slot = IteratorGetCurrentSlot(iteratorPtr);
+                    var controller = GetPlayerFromSlot(slot);
+
+                    if (controller != null && controller.IsValid &&
+                        controller.Connected == PlayerConnectedState.PlayerConnected)
+                    {
+                        action(controller);
+                    }
+
+                    IteratorMoveNext(iteratorPtr);
+                }
+            }
+            finally
+            {
+                DestroyIterator(iteratorPtr);
+            }
+        }
+
+        /// <summary>
+        /// Returns a list of <see cref="CCSPlayerController"/> that are valid and have a valid <see cref="CCSPlayerController.UserId"/> >= 0
+        /// </summary>
+        public static List<CCSPlayerController> GetPlayers2()
+        {
+            return GetPlayersEnumerable().ToList();
         }
 
         [Obsolete]
@@ -196,9 +259,9 @@ namespace CounterStrikeSharp.API
                     ++len;
                 }
 
-                var buffer = new byte[len];
-                Marshal.Copy(nativeUtf8, buffer, 0, buffer.Length);
-                return Encoding.UTF8.GetString(buffer);
+                // Use Span<byte> for zero-copy UTF8 string reading
+                var utf8Span = new ReadOnlySpan<byte>((void*)nativeUtf8, len);
+                return Encoding.UTF8.GetString(utf8Span);
             }
         }
 
@@ -230,8 +293,10 @@ namespace CounterStrikeSharp.API
 
             if (!Schema.IsSchemaFieldNetworked(className, fieldName))
             {
-                Application.Instance.Logger.LogWarning(
-                    "Field {ClassName}:{FieldName} is not networked, but SetStateChanged was called on it.", className, fieldName);
+                // Use ZString for zero-allocation string formatting
+                using var sb = ZString.CreateStringBuilder();
+                sb.AppendFormat("Field {0}:{1} is not networked, but SetStateChanged was called on it.", className, fieldName);
+                Application.Instance.Logger.LogWarning(sb.ToString());
                 return;
             }
 
@@ -264,65 +329,30 @@ namespace CounterStrikeSharp.API
             }
             return ptr;
         }
-    }
 
-    public static partial class ZLinqExtensions
-    {
-        public static IEnumerable<T> AsEnumerable<TEnumerator, T>(this ZLinq.ValueEnumerable<TEnumerator, T> valueEnumerable)
-            where TEnumerator : struct, ZLinq.IValueEnumerator<T>
-#if NET9_0_OR_GREATER
-            , allows ref struct
-#endif
+        private static IntPtr CreateConnectedPlayersIterator()
         {
-            using (var e = valueEnumerable.Enumerator)
-            {
-                while (e.TryGetNext(out var current))
-                {
-                    yield return current;
-                }
-            }
+            return NativeAPI.CreateConnectedPlayersIterator();
         }
 
-        public static T[] ToArray<TEnumerator, T>(this ZLinq.ValueEnumerable<TEnumerator, T> source)
-            where TEnumerator : struct, ZLinq.IValueEnumerator<T>
-#if NET9_0_OR_GREATER
-            , allows ref struct
-#endif
+        private static bool IteratorHasNext(IntPtr iterator)
         {
-            return System.Linq.Enumerable.ToArray(source.AsEnumerable());
+            return NativeAPI.IteratorHasNext(iterator);
         }
 
-        public static List<T> ToList<TEnumerator, T>(this ZLinq.ValueEnumerable<TEnumerator, T> source)
-            where TEnumerator : struct, ZLinq.IValueEnumerator<T>
-#if NET9_0_OR_GREATER
-            , allows ref struct
-#endif
+        private static int IteratorGetCurrentSlot(IntPtr iterator)
         {
-            return System.Linq.Enumerable.ToList(source.AsEnumerable());
+            return NativeAPI.IteratorGetCurrentSlot(iterator);
         }
 
-        public static T? FirstOrDefault<TEnumerator, T>(this ZLinq.ValueEnumerable<TEnumerator, T> source)
-            where TEnumerator : struct, ZLinq.IValueEnumerator<T>
-#if NET9_0_OR_GREATER
-            , allows ref struct
-#endif
+        private static void IteratorMoveNext(IntPtr iterator)
         {
-            using var e = source.Enumerator;
-            if (e.TryGetNext(out var current))
-            {
-                return current;
-            }
-            return default;
+            NativeAPI.IteratorMoveNext(iterator);
         }
 
-        public static T? FirstOrDefault<TEnumerator, T>(this ZLinq.ValueEnumerable<TEnumerator, T> source, Func<T, bool> predicate)
-            where TEnumerator : struct, ZLinq.IValueEnumerator<T>
-#if NET9_0_OR_GREATER
-            , allows ref struct
-#endif
+        private static void DestroyIterator(IntPtr iterator)
         {
-            // This can be optimized by not using AsEnumerable()
-            return System.Linq.Enumerable.FirstOrDefault(source.AsEnumerable(), predicate);
+            NativeAPI.DestroyIterator(iterator);
         }
     }
 }
