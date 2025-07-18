@@ -1,19 +1,23 @@
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using CounterStrikeSharp.API.Core;
+using Cysharp.Text;
 
 namespace CounterStrikeSharp.API.Modules.Memory;
 
 public class Schema
 {
-    private static Dictionary<Tuple<string, string>, short> _schemaOffsets = new();
+    private static readonly ConcurrentDictionary<(string className, string propertyName), short> _schemaOffsets = new();
 
-    private static HashSet<string> _cs2BadList = new HashSet<string>()
+    private static readonly FrozenSet<string> _cs2BadList = new[]
     {
         "m_bIsValveDS",
         "m_bIsQuestEligible",
@@ -51,56 +55,77 @@ public class Schema
 
         "m_nActiveCoinRank",
         "m_nMusicID",
-    };
-    
+    }.ToFrozenSet(StringComparer.Ordinal);
+
+    private static class DataTypeCache<T>
+    {
+        internal static readonly int Value = (int)(typeof(T).ToDataType() ?? 0);
+    }
+
+    [DoesNotReturn]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ThrowBadField(string className, string propertyName)
+        => throw new Exception(ZString.Format("Cannot set or get '{0}::{1}' with \"FollowCS2ServerGuidelines\" option enabled.", className, propertyName));
+
+    [DoesNotReturn]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static T ThrowNullPointer<T>()
+        => throw new ArgumentNullException("pointer", "Schema target points to null.");
+
+    [DoesNotReturn]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ThrowTooLong(int maxLength)
+        => throw new ArgumentException(ZString.Format("String length exceeds maximum length of {0}", maxLength - 1));
+
+    [DoesNotReturn]
+    private static void ThrowNullPointer()
+        => throw new ArgumentNullException("pointer", "...");
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int GetClassSize(string className) => NativeAPI.GetSchemaClassSize(className);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static short GetSchemaOffset(string className, string propertyName)
     {
         if (CoreConfig.FollowCS2ServerGuidelines && _cs2BadList.Contains(propertyName))
-        {
-            throw new Exception($"Cannot set or get '{className}::{propertyName}' with \"FollowCS2ServerGuidelines\" option enabled.");
-        }
+            ThrowBadField(className, propertyName);
 
-        var key = new Tuple<string, string>(className, propertyName);
-        if (!_schemaOffsets.TryGetValue(key, out var offset))
-        {
-            offset = NativeAPI.GetSchemaOffset(className, propertyName);
-            _schemaOffsets.Add(key, offset);
-        }
-
-        return offset;
+        return _schemaOffsets.GetOrAdd((className, propertyName),
+            static key => NativeAPI.GetSchemaOffset(key.className, key.propertyName));
     }
-    
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsSchemaFieldNetworked(string className, string propertyName)
     {
         return NativeAPI.IsSchemaFieldNetworked(className, propertyName);
     }
 
-    public static T GetSchemaValue<T>(IntPtr handle, string className, string propertyName)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static T GetSchemaValue<T>(nint handle, string className, string propertyName)
     {
-        if (handle == IntPtr.Zero) throw new ArgumentNullException(nameof(handle), "Schema target points to null.");
+        if (handle == 0) return ThrowNullPointer<T>();
 
-        return NativeAPI.GetSchemaValueByName<T>(handle, (int)typeof(T).ToDataType(), className, propertyName);
+        return NativeAPI.GetSchemaValueByName<T>(handle, DataTypeCache<T>.Value, className, propertyName);
     }
 
-    public static void SetSchemaValue<T>(IntPtr handle, string className, string propertyName, T value)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void SetSchemaValue<T>(nint handle, string className, string propertyName, T value)
     {
-        if (handle == IntPtr.Zero) throw new ArgumentNullException(nameof(handle), "Schema target points to null.");
+        if (handle == 0) ThrowNullPointer<object>();
 
         if (CoreConfig.FollowCS2ServerGuidelines && _cs2BadList.Contains(propertyName))
-        {
-            throw new Exception($"Cannot set or get '{className}::{propertyName}' with \"FollowCS2ServerGuidelines\" option enabled.");
-        }
+            ThrowBadField(className, propertyName);
 
-        NativeAPI.SetSchemaValueByName<T>(handle, (int)typeof(T).ToDataType(), className, propertyName, value);
+        NativeAPI.SetSchemaValueByName<T>(handle, DataTypeCache<T>.Value, className, propertyName, value);
     }
 
-    public static T GetDeclaredClass<T>(IntPtr pointer, string className, string memberName)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static T GetDeclaredClass<T>(nint pointer, string className, string memberName)
     {
-        if (pointer == IntPtr.Zero) throw new ArgumentNullException(nameof(pointer), "Schema target points to null.");
+        if (pointer == 0) return ThrowNullPointer<T>();
 
-        object? instance = Activator.CreateInstance(typeof(T), pointer + GetSchemaOffset(className, memberName));
+        var targetPtr = pointer + GetSchemaOffset(className, memberName);
+        object? instance = Activator.CreateInstance(typeof(T), targetPtr);
 
         if (DisposableMemory.IsDisposableType(typeof(T)))
         {
@@ -110,17 +135,19 @@ public class Schema
         return (T)instance;
     }
 
-    public static unsafe ref T GetRef<T>(IntPtr pointer, string className, string memberName)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe ref T GetRef<T>(nint pointer, string className, string memberName)
     {
-        if (pointer == IntPtr.Zero) throw new ArgumentNullException(nameof(pointer), "Schema target points to null.");
+        if (pointer == 0) ThrowNullPointer<T>();
 
         return ref Unsafe.AsRef<T>((void*)(pointer + GetSchemaOffset(className, memberName)));
     }
 
-    public static T GetPointer<T>(IntPtr pointer)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe T GetPointer<T>(nint pointer)
     {
-        var pointerTo = Marshal.ReadIntPtr(pointer);
-        if (pointerTo == IntPtr.Zero)
+        var pointerTo = Unsafe.Read<nint>((void*)pointer);
+        if (pointerTo == 0)
         {
             return default;
         }
@@ -128,12 +155,14 @@ public class Schema
         return (T)Activator.CreateInstance(typeof(T), pointerTo);
     }
 
-    public static T GetPointer<T>(IntPtr pointer, string className, string memberName)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe T GetPointer<T>(nint pointer, string className, string memberName)
     {
-        if (pointer == IntPtr.Zero) throw new ArgumentNullException(nameof(pointer), "Schema target points to null.");
+        if (pointer == 0) return ThrowNullPointer<T>();
 
-        var pointerTo = Marshal.ReadIntPtr(pointer + GetSchemaOffset(className, memberName));
-        if (pointerTo == IntPtr.Zero)
+        var targetPtr = pointer + GetSchemaOffset(className, memberName);
+        var pointerTo = Unsafe.Read<nint>((void*)targetPtr);
+        if (pointerTo == 0)
         {
             return default;
         }
@@ -141,15 +170,15 @@ public class Schema
         return (T)Activator.CreateInstance(typeof(T), pointerTo);
     }
 
-    public static unsafe Span<T> GetFixedArray<T>(IntPtr pointer, string className, string memberName, int count)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe Span<T> GetFixedArray<T>(nint pointer, string className, string memberName, int count)
     {
-        if (pointer == IntPtr.Zero) throw new ArgumentNullException(nameof(pointer), "Schema target points to null.");
+        if (pointer == 0) { ThrowNullPointer(); return default; }
 
-        Span<T> span = new((void*)(pointer + GetSchemaOffset(className, memberName)), count);
+        var targetPtr = pointer + GetSchemaOffset(className, memberName);
+        return new Span<T>((void*)targetPtr, count);
 
         // TODO: once we get a correct implementation for this method check for `DisposableMemory` instances and mark them as pure
-
-        return span;
     }
 
     /// <summary>
@@ -157,11 +186,12 @@ public class Schema
     /// These are for non-networked strings, which are just stored as raw char bytes on the server.
     /// </summary>
     /// <returns></returns>
-    public static string GetString(IntPtr pointer, string className, string memberName)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static string GetString(nint pointer, string className, string memberName)
     {
         return GetSchemaValue<string>(pointer, className, memberName);
     }
-    
+
     /// <summary>
     /// Reads a UTF8 encoded string from the specified pointer, class name, and member name.
     /// These are for networked strings, which need to be read differently.
@@ -170,55 +200,68 @@ public class Schema
     /// <param name="className"></param>
     /// <param name="memberName"></param>
     /// <returns></returns>
-    public static string GetUtf8String(IntPtr pointer, string className, string memberName)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static string GetUtf8String(nint pointer, string className, string memberName)
     {
         return Utilities.ReadStringUtf8(pointer + GetSchemaOffset(className, memberName));
     }
-    
+
     // Used to write to `string_t` and `char*` pointer type strings
-    public unsafe static void SetString(IntPtr pointer, string className, string memberName, string value)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public unsafe static void SetString(nint pointer, string className, string memberName, string value)
     {
         SetSchemaValue(pointer, className, memberName, value);
     }
-    
-    // Used to write to the char[] specified at the schema location, i.e. char m_iszPlayerName[128]; 
-    internal unsafe static void SetStringBytes(IntPtr pointer, string className, string memberName, string value, int maxLength)
+
+    // Used to write to the char[] specified at the schema location, i.e. char m_iszPlayerName[128];
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal unsafe static void SetStringBytes(nint pointer, string className, string memberName, string value, int maxLength)
     {
-        var handle = GetSchemaValue<IntPtr>(pointer, className, memberName);
-        
-        var bytes = Encoding.UTF8.GetBytes(value);
-        if (bytes.Length > maxLength)
+        var handle = GetSchemaValue<nint>(pointer, className, memberName);
+
+        if (string.IsNullOrEmpty(value))
         {
-            throw new ArgumentException($"String length exceeds maximum length of {maxLength}");
+            Unsafe.Write((void*)handle, (byte)0);
+            return;
         }
-        
-        for (int i = 0; i < bytes.Length; i++)
-        {
-            Unsafe.Write((void*)(handle.ToInt64() + i), bytes[i]);
-        }
-        
-        Unsafe.Write((void*)(handle.ToInt64() + bytes.Length), 0);
+
+        int byteLen = Encoding.UTF8.GetByteCount(value);
+        if (byteLen >= maxLength) ThrowTooLong(maxLength);
+
+        Span<byte> tmp = byteLen <= 256 ? stackalloc byte[byteLen] : new byte[byteLen];
+        Encoding.UTF8.GetBytes(value, tmp);
+
+        tmp.CopyTo(new Span<byte>((void*)handle, maxLength));
+        Unsafe.Write((void*)(handle + byteLen), (byte)0);
     }
-    
-    public static T GetCustomMarshalledType<T>(IntPtr pointer, string className, string memberName)
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static T GetCustomMarshalledType<T>(nint pointer, string className, string memberName)
     {
+        if (pointer == 0) return ThrowNullPointer<T>();
+
+        var targetPtr = pointer + GetSchemaOffset(className, memberName);
         var type = typeof(T);
         object result = type switch
         {
-            _ when type == typeof(Color) => Marshaling.ColorMarshaler.NativeToManaged(pointer + GetSchemaOffset(className, memberName)),
+            _ when type == typeof(Color) => Marshaling.ColorMarshaler.NativeToManaged(targetPtr),
             _ => throw new NotSupportedException(),
         };
 
         return (T)result;
     }
-    
-    public static void SetCustomMarshalledType<T>(IntPtr pointer, string className, string memberName, T value)
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void SetCustomMarshalledType<T>(nint pointer, string className, string memberName, T value)
     {
+        if (pointer == 0) ThrowNullPointer<object>();
+
+        var targetPtr = pointer + GetSchemaOffset(className, memberName);
         var type = typeof(T);
         switch (type)
         {
             case var _ when value is Color c:
-                Marshaling.ColorMarshaler.ManagedToNative(pointer + GetSchemaOffset(className, memberName), c);
+                Marshaling.ColorMarshaler.ManagedToNative(targetPtr, c);
                 break;
             default:
                 throw new NotSupportedException();

@@ -302,7 +302,7 @@ namespace CounterStrikeSharp.API.Core.Memory
                 DateTime startTime = DateTime.UtcNow;
 
                 // some may go to gen1 or even gen2, but even those are released when this nondeterministic wonder wants so
-                ForceCollect(0, GCCollectionMode.Default, true);
+                ForceCollect(2, GCCollectionMode.Optimized, false);
 
                 // this might be obsolete with 'blocking: false'?
                 GC.WaitForPendingFinalizers();
