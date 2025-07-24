@@ -395,9 +395,7 @@ namespace CounterStrikeSharp.API.Core
 		[SecuritySafeCritical]
 		private unsafe void Free(IntPtr ptr)
 		{
-			// Try to cache the buffer for reuse before freeing
-			// Estimate size based on common UTF8 string lengths
-			if (!Utf8Interop.TryCacheBuffer(ptr, 1024))
+			if (ptr != IntPtr.Zero)
 			{
 				NativeMemory.Free((void*)ptr);
 			}
@@ -563,14 +561,19 @@ namespace CounterStrikeSharp.API.Core
 
 		internal void GlobalCleanUp()
 		{
-			const int TimeBudgetUs = 200; // 0.2 ms
+			const int TimeBudgetUs = 500; // 0.5 ms - increased budget
 			var sw = Stopwatch.GetTimestamp();
 			long ticksBudget = TimeBudgetUs * Stopwatch.Frequency / 1_000_000;
+			int processedCount = 0;
+			const int MaxProcessPerFrame = 100; // Limit processing per frame
 
-			while (ms_finalizers.TryDequeue(out var ptr))
+			while (ms_finalizers.TryDequeue(out var ptr) && processedCount < MaxProcessPerFrame)
 			{
 				Free(ptr);
-				if (Stopwatch.GetTimestamp() - sw > ticksBudget)
+				processedCount++;
+
+				// Check time budget every 10 items to reduce overhead
+				if (processedCount % 10 == 0 && Stopwatch.GetTimestamp() - sw > ticksBudget)
 					break;
 			}
 		}
@@ -618,12 +621,8 @@ namespace CounterStrikeSharp.API.Core
 
 		public static class Utf8Interop
 		{
-			// Thread-local UTF8 buffer cache for reducing alloc/free overhead
-			[ThreadStatic]
-			private static Dictionary<int, IntPtr> _utf8BufferCache;
-
-			private static Dictionary<int, IntPtr> Utf8BufferCache =>
-				_utf8BufferCache ??= new Dictionary<int, IntPtr>();
+			// Removed buffer caching to eliminate race conditions and memory safety issues
+			// Direct allocation/deallocation is more predictable and safer
 
 			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			internal static unsafe IntPtr AllocUtf8(string? str)
@@ -653,65 +652,24 @@ namespace CounterStrikeSharp.API.Core
 				if (str is null) return IntPtr.Zero;
 
 				var maxBytes = Encoding.UTF8.GetMaxByteCount(str.Length) + 1;
+				var ptr = (byte*)NativeMemory.Alloc((nuint)maxBytes);
 
-				// Try to reuse cached buffer for common sizes (512B, 1KB, 2KB)
-				int cacheSize = maxBytes <= 512 ? 512 :
-								maxBytes <= 1024 ? 1024 :
-								maxBytes <= 2048 ? 2048 : 0;
-
-				byte* ptr;
-				if (cacheSize > 0 && Utf8BufferCache.TryGetValue(cacheSize, out var cachedPtr))
+				if (ptr == null)
 				{
-					Utf8BufferCache.Remove(cacheSize);
-					ptr = (byte*)cachedPtr;
-				}
-				else
-				{
-					ptr = (byte*)NativeMemory.Alloc((nuint)maxBytes);
+					throw new OutOfMemoryException("Failed to allocate UTF8 buffer");
 				}
 
 				Span<byte> dst = new Span<byte>(ptr, maxBytes);
 				if (!Utf8String.TryFormat(dst, out var written, $"{str}"))
 				{
-					// If reusing cached buffer fails, try fresh allocation
-					if (cacheSize > 0)
-					{
-						NativeMemory.Free(ptr);
-						ptr = (byte*)NativeMemory.Alloc((nuint)maxBytes);
-						dst = new Span<byte>(ptr, maxBytes);
-						if (!Utf8String.TryFormat(dst, out written, $"{str}"))
-						{
-							NativeMemory.Free(ptr);
-							throw new InvalidOperationException("Unexpected: buffer too small");
-						}
-					}
-					else
-					{
-						NativeMemory.Free(ptr);
-						throw new InvalidOperationException("Unexpected: buffer too small");
-					}
+					NativeMemory.Free(ptr);
+					throw new InvalidOperationException("Failed to format UTF8 string");
 				}
 
 				ptr[written] = 0;
 				return (IntPtr)ptr;
 			}
 
-			// Called from Free() to potentially cache the buffer for reuse
-			[MethodImpl(MethodImplOptions.AggressiveInlining)]
-			internal static unsafe bool TryCacheBuffer(IntPtr ptr, int estimatedSize)
-			{
-				// Only cache common sizes and limit cache entries to prevent memory bloat
-				int cacheSize = estimatedSize <= 512 ? 512 :
-								estimatedSize <= 1024 ? 1024 :
-								estimatedSize <= 2048 ? 2048 : 0;
-
-				if (cacheSize > 0 && Utf8BufferCache.Count < 3 && !Utf8BufferCache.ContainsKey(cacheSize))
-				{
-					Utf8BufferCache[cacheSize] = ptr;
-					return true;
-				}
-				return false;
-			}
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
