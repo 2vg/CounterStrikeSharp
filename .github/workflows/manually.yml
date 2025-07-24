@@ -103,11 +103,21 @@ jobs:
         with:
           submodules: "recursive"
 
+      - name: Install Clang 20 (experimental)
+        run: |
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
+          echo "deb http://apt.llvm.org/bullseye/ llvm-toolchain-bullseye-20 main" >> /etc/apt/sources.list.d/llvm.list
+          echo "deb http://deb.debian.org/debian experimental main" >> /etc/apt/sources.list.d/experimental.list
+          apt-get update
+          apt-get install -y -t experimental clang-20 clang++-20
+          update-alternatives --install /usr/bin/clang clang /usr/bin/clang-20 100
+          update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-20 100
+
       - name: Build
         run: |
           mkdir -p build
           cd build
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} ..
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_C_COMPILER=clang-20 -DCMAKE_CXX_COMPILER=clang++-20 ..
           cmake --build . --config ${{env.BUILD_TYPE}} -- -j16
 
       - name: Clean build directory
