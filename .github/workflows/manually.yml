@@ -5,7 +5,7 @@ on:
   push:
     paths-ignore:
       - "docfx/**"
-    branches: ["main", "dev"]
+    branches: ["main", "dev", "feat/z"]
   pull_request:
     branches: ["main", "dev"]
 
