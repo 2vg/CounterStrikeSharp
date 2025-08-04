@@ -9,21 +9,6 @@ namespace CounterStrikeSharp.API.Core
 {
 	public class NativeAPI
 	{
-
-		public static bool AddListener(string name, InputArgument callback)
-		{
-			lock (ScriptContext.GlobalScriptContext.Lock)
-			{
-				ScriptContext.GlobalScriptContext.Reset();
-				ScriptContext.GlobalScriptContext.Push(name);
-				ScriptContext.GlobalScriptContext.Push((InputArgument)callback);
-				ScriptContext.GlobalScriptContext.SetIdentifier(0x8E7D0305);
-				ScriptContext.GlobalScriptContext.Invoke();
-				ScriptContext.GlobalScriptContext.CheckErrors();
-				return (bool)ScriptContext.GlobalScriptContext.GetResult(typeof(bool));
-			}
-		}
-
 		public static bool RemoveListener(string name, InputArgument callback)
 		{
 			lock (ScriptContext.GlobalScriptContext.Lock)
@@ -250,6 +235,182 @@ namespace CounterStrikeSharp.API.Core
 				ScriptContext.GlobalScriptContext.Push(convarname);
 				ScriptContext.GlobalScriptContext.Push(convarvalue);
 				ScriptContext.GlobalScriptContext.SetIdentifier(0xC8728BEC);
+				ScriptContext.GlobalScriptContext.Invoke();
+				ScriptContext.GlobalScriptContext.CheckErrors();
+			}
+		}
+
+		public static void SetConvarFlags(ushort convar, ulong flags)
+		{
+			lock (ScriptContext.GlobalScriptContext.Lock)
+			{
+				ScriptContext.GlobalScriptContext.Reset();
+				ScriptContext.GlobalScriptContext.Push(convar);
+				ScriptContext.GlobalScriptContext.Push(flags);
+				ScriptContext.GlobalScriptContext.SetIdentifier(0xB2BDCCBF);
+				ScriptContext.GlobalScriptContext.Invoke();
+				ScriptContext.GlobalScriptContext.CheckErrors();
+			}
+		}
+
+		public static ulong GetConvarFlags(ushort convar)
+		{
+			lock (ScriptContext.GlobalScriptContext.Lock)
+			{
+				ScriptContext.GlobalScriptContext.Reset();
+				ScriptContext.GlobalScriptContext.Push(convar);
+				ScriptContext.GlobalScriptContext.SetIdentifier(0x94829E2B);
+				ScriptContext.GlobalScriptContext.Invoke();
+				ScriptContext.GlobalScriptContext.CheckErrors();
+				return (ulong)ScriptContext.GlobalScriptContext.GetResult(typeof(ulong));
+			}
+		}
+
+		public static short GetConvarType(ushort convar)
+		{
+			lock (ScriptContext.GlobalScriptContext.Lock)
+			{
+				ScriptContext.GlobalScriptContext.Reset();
+				ScriptContext.GlobalScriptContext.Push(convar);
+				ScriptContext.GlobalScriptContext.SetIdentifier(0xB6E0E54C);
+				ScriptContext.GlobalScriptContext.Invoke();
+				ScriptContext.GlobalScriptContext.CheckErrors();
+				return (short)ScriptContext.GlobalScriptContext.GetResult(typeof(short));
+			}
+		}
+
+		public static string GetConvarName(ushort convar)
+		{
+			lock (ScriptContext.GlobalScriptContext.Lock)
+			{
+				ScriptContext.GlobalScriptContext.Reset();
+				ScriptContext.GlobalScriptContext.Push(convar);
+				ScriptContext.GlobalScriptContext.SetIdentifier(0xB6F0E2F3);
+				ScriptContext.GlobalScriptContext.Invoke();
+				ScriptContext.GlobalScriptContext.CheckErrors();
+				return (string)ScriptContext.GlobalScriptContext.GetResult(typeof(string));
+			}
+		}
+
+		public static string GetConvarHelpText(ushort convar)
+		{
+			lock (ScriptContext.GlobalScriptContext.Lock)
+			{
+				ScriptContext.GlobalScriptContext.Reset();
+				ScriptContext.GlobalScriptContext.Push(convar);
+				ScriptContext.GlobalScriptContext.SetIdentifier(0x341D1F67);
+				ScriptContext.GlobalScriptContext.Invoke();
+				ScriptContext.GlobalScriptContext.CheckErrors();
+				return (string)ScriptContext.GlobalScriptContext.GetResult(typeof(string));
+			}
+		}
+
+		public static ushort GetConvarAccessIndexByName(string name)
+		{
+			lock (ScriptContext.GlobalScriptContext.Lock)
+			{
+				ScriptContext.GlobalScriptContext.Reset();
+				ScriptContext.GlobalScriptContext.Push(name);
+				ScriptContext.GlobalScriptContext.SetIdentifier(0x6288420D);
+				ScriptContext.GlobalScriptContext.Invoke();
+				ScriptContext.GlobalScriptContext.CheckErrors();
+				return (ushort)ScriptContext.GlobalScriptContext.GetResult(typeof(ushort));
+			}
+		}
+
+		public static T GetConvarValue<T>(ushort convar)
+		{
+			lock (ScriptContext.GlobalScriptContext.Lock)
+			{
+				ScriptContext.GlobalScriptContext.Reset();
+				ScriptContext.GlobalScriptContext.Push(convar);
+				ScriptContext.GlobalScriptContext.SetIdentifier(0x935B2E9F);
+				ScriptContext.GlobalScriptContext.Invoke();
+				ScriptContext.GlobalScriptContext.CheckErrors();
+				return (T)ScriptContext.GlobalScriptContext.GetResult(typeof(T));
+			}
+		}
+
+		public static string GetConvarValueAsString(ushort convar)
+		{
+			lock (ScriptContext.GlobalScriptContext.Lock)
+			{
+				ScriptContext.GlobalScriptContext.Reset();
+				ScriptContext.GlobalScriptContext.Push(convar);
+				ScriptContext.GlobalScriptContext.SetIdentifier(0x5CC184F8);
+				ScriptContext.GlobalScriptContext.Invoke();
+				ScriptContext.GlobalScriptContext.CheckErrors();
+				return (string)ScriptContext.GlobalScriptContext.GetResult(typeof(string));
+			}
+		}
+
+		public static IntPtr GetConvarValueAddress(ushort convar)
+		{
+			lock (ScriptContext.GlobalScriptContext.Lock)
+			{
+				ScriptContext.GlobalScriptContext.Reset();
+				ScriptContext.GlobalScriptContext.Push(convar);
+				ScriptContext.GlobalScriptContext.SetIdentifier(0xECC4CC16);
+				ScriptContext.GlobalScriptContext.Invoke();
+				ScriptContext.GlobalScriptContext.CheckErrors();
+				return (IntPtr)ScriptContext.GlobalScriptContext.GetResult(typeof(IntPtr));
+			}
+		}
+
+		public static void SetConvarValueAsString(ushort convar, string value)
+		{
+			lock (ScriptContext.GlobalScriptContext.Lock)
+			{
+				ScriptContext.GlobalScriptContext.Reset();
+				ScriptContext.GlobalScriptContext.Push(convar);
+				ScriptContext.GlobalScriptContext.Push(value);
+				ScriptContext.GlobalScriptContext.SetIdentifier(0x5EF52D6C);
+				ScriptContext.GlobalScriptContext.Invoke();
+				ScriptContext.GlobalScriptContext.CheckErrors();
+			}
+		}
+
+		public static void SetConvarValue<T>(ushort convar, T value)
+		{
+			lock (ScriptContext.GlobalScriptContext.Lock)
+			{
+				ScriptContext.GlobalScriptContext.Reset();
+				ScriptContext.GlobalScriptContext.Push(convar);
+				ScriptContext.GlobalScriptContext.Push(value);
+				ScriptContext.GlobalScriptContext.SetIdentifier(0xB3DDAA0B);
+				ScriptContext.GlobalScriptContext.Invoke();
+				ScriptContext.GlobalScriptContext.CheckErrors();
+			}
+		}
+
+		public static ushort CreateConvar<T>(string name, short type, string helptext, ulong flags, bool hasmin, bool hasmax, T defaultvalue, T minvalue, T maxvalue)
+		{
+			lock (ScriptContext.GlobalScriptContext.Lock)
+			{
+				ScriptContext.GlobalScriptContext.Reset();
+				ScriptContext.GlobalScriptContext.Push(name);
+				ScriptContext.GlobalScriptContext.Push(type);
+				ScriptContext.GlobalScriptContext.Push(helptext);
+				ScriptContext.GlobalScriptContext.Push(flags);
+				ScriptContext.GlobalScriptContext.Push(hasmin);
+				ScriptContext.GlobalScriptContext.Push(hasmax);
+				ScriptContext.GlobalScriptContext.Push(defaultvalue);
+				ScriptContext.GlobalScriptContext.Push(minvalue);
+				ScriptContext.GlobalScriptContext.Push(maxvalue);
+				ScriptContext.GlobalScriptContext.SetIdentifier(0xF22079B9);
+				ScriptContext.GlobalScriptContext.Invoke();
+				ScriptContext.GlobalScriptContext.CheckErrors();
+				return (ushort)ScriptContext.GlobalScriptContext.GetResult(typeof(ushort));
+			}
+		}
+
+		public static void DeleteConvar(ushort convar)
+		{
+			lock (ScriptContext.GlobalScriptContext.Lock)
+			{
+				ScriptContext.GlobalScriptContext.Reset();
+				ScriptContext.GlobalScriptContext.Push(convar);
+				ScriptContext.GlobalScriptContext.SetIdentifier(0xFC28F444);
 				ScriptContext.GlobalScriptContext.Invoke();
 				ScriptContext.GlobalScriptContext.CheckErrors();
 			}
@@ -854,6 +1015,20 @@ namespace CounterStrikeSharp.API.Core
 			}
 		}
 
+		public static void ClientPrint(int slot, int huddestination, string msg)
+		{
+			lock (ScriptContext.GlobalScriptContext.Lock)
+			{
+				ScriptContext.GlobalScriptContext.Reset();
+				ScriptContext.GlobalScriptContext.Push(slot);
+				ScriptContext.GlobalScriptContext.Push(huddestination);
+				ScriptContext.GlobalScriptContext.Push(msg);
+				ScriptContext.GlobalScriptContext.SetIdentifier(0x8F03FA72);
+				ScriptContext.GlobalScriptContext.Invoke();
+				ScriptContext.GlobalScriptContext.CheckErrors();
+			}
+		}
+
 		public static IntPtr GetEntityFromIndex(int index)
 		{
 			lock (ScriptContext.GlobalScriptContext.Lock)
@@ -1418,79 +1593,41 @@ namespace CounterStrikeSharp.API.Core
 				ScriptContext.GlobalScriptContext.Push(returntype);
 				foreach (var obj in arguments)
 				{
-					ScriptContext.GlobalScriptContext.Push(obj);
+					ScriptContext.GlobalScriptContext.Reset();
+					ScriptContext.GlobalScriptContext.Push(name);
+					ScriptContext.GlobalScriptContext.Push((InputArgument)callback);
+					ScriptContext.GlobalScriptContext.SetIdentifier(0x8E7D0305);
+					ScriptContext.GlobalScriptContext.Invoke();
+					ScriptContext.GlobalScriptContext.CheckErrors();
+					return (bool)ScriptContext.GlobalScriptContext.GetResult(typeof(bool));
 				}
-				ScriptContext.GlobalScriptContext.SetIdentifier(0x2531DA2);
-				ScriptContext.GlobalScriptContext.Invoke();
-				ScriptContext.GlobalScriptContext.CheckErrors();
-				return (IntPtr)ScriptContext.GlobalScriptContext.GetResult(typeof(IntPtr));
 			}
 		}
 
-		public static IntPtr CreateVirtualFunctionBySignature(IntPtr pointer, string binaryname, string signature, int numarguments, int returntype, object[] arguments)
+		public static bool RemoveListener(string name, InputArgument callback)
 		{
 			lock (ScriptContext.GlobalScriptContext.Lock)
 			{
 				ScriptContext.GlobalScriptContext.Reset();
-				ScriptContext.GlobalScriptContext.Push(pointer);
-				ScriptContext.GlobalScriptContext.Push(binaryname);
-				ScriptContext.GlobalScriptContext.Push(signature);
-				ScriptContext.GlobalScriptContext.Push(numarguments);
-				ScriptContext.GlobalScriptContext.Push(returntype);
-				foreach (var obj in arguments)
-				{
-					ScriptContext.GlobalScriptContext.Push(obj);
-				}
-				ScriptContext.GlobalScriptContext.SetIdentifier(0x8D25187D);
+				ScriptContext.GlobalScriptContext.Push(name);
+				ScriptContext.GlobalScriptContext.Push((InputArgument)callback);
+				ScriptContext.GlobalScriptContext.SetIdentifier(0x47C507A2);
 				ScriptContext.GlobalScriptContext.Invoke();
 				ScriptContext.GlobalScriptContext.CheckErrors();
-				return (IntPtr)ScriptContext.GlobalScriptContext.GetResult(typeof(IntPtr));
+				return (bool)ScriptContext.GlobalScriptContext.GetResult(typeof(bool));
 			}
 		}
 
-		public static void HookFunction(IntPtr function, InputArgument hook, bool post)
+		public static void AddCommand(string name, string description, bool serveronly, int flags, InputArgument callback)
 		{
 			lock (ScriptContext.GlobalScriptContext.Lock)
 			{
-				ScriptContext.GlobalScriptContext.Reset();
-				ScriptContext.GlobalScriptContext.Push(function);
-				ScriptContext.GlobalScriptContext.Push((InputArgument)hook);
-				ScriptContext.GlobalScriptContext.Push(post);
-				ScriptContext.GlobalScriptContext.SetIdentifier(0xA6C8BA9B);
-				ScriptContext.GlobalScriptContext.Invoke();
-				ScriptContext.GlobalScriptContext.CheckErrors();
+				ScriptContext.GlobalScriptContext.Push(obj);
 			}
-		}
-
-		public static void UnhookFunction(IntPtr function, InputArgument hook, bool post)
-		{
-			lock (ScriptContext.GlobalScriptContext.Lock)
-			{
-				ScriptContext.GlobalScriptContext.Reset();
-				ScriptContext.GlobalScriptContext.Push(function);
-				ScriptContext.GlobalScriptContext.Push((InputArgument)hook);
-				ScriptContext.GlobalScriptContext.Push(post);
-				ScriptContext.GlobalScriptContext.SetIdentifier(0x2051B00);
-				ScriptContext.GlobalScriptContext.Invoke();
-				ScriptContext.GlobalScriptContext.CheckErrors();
-			}
-		}
-
-		public static T ExecuteVirtualFunction<T>(IntPtr function, object[] arguments)
-		{
-			lock (ScriptContext.GlobalScriptContext.Lock)
-			{
-				ScriptContext.GlobalScriptContext.Reset();
-				ScriptContext.GlobalScriptContext.Push(function);
-				foreach (var obj in arguments)
-				{
-					ScriptContext.GlobalScriptContext.Push(obj);
-				}
-				ScriptContext.GlobalScriptContext.SetIdentifier(0x376A0359);
-				ScriptContext.GlobalScriptContext.Invoke();
-				ScriptContext.GlobalScriptContext.CheckErrors();
-				return (T)ScriptContext.GlobalScriptContext.GetResult(typeof(T));
-			}
+			ScriptContext.GlobalScriptContext.SetIdentifier(0x376A0359);
+			ScriptContext.GlobalScriptContext.Invoke();
+			ScriptContext.GlobalScriptContext.CheckErrors();
+			return (T)ScriptContext.GlobalScriptContext.GetResult(typeof(T));
 		}
 
 		public static IntPtr FindSignature(string modulepath, string signature)
@@ -1629,6 +1766,36 @@ namespace CounterStrikeSharp.API.Core
 				ScriptContext.GlobalScriptContext.Invoke();
 				ScriptContext.GlobalScriptContext.CheckErrors();
 				return (int)ScriptContext.GlobalScriptContext.GetResult(typeof(int));
+			}
+		}
+
+		public static void SchemaSetStateChanged(IntPtr instance, uint offset, uint arrayindex, uint pathindex)
+		{
+			lock (ScriptContext.GlobalScriptContext.Lock)
+			{
+				ScriptContext.GlobalScriptContext.Reset();
+				ScriptContext.GlobalScriptContext.Push(instance);
+				ScriptContext.GlobalScriptContext.Push(offset);
+				ScriptContext.GlobalScriptContext.Push(arrayindex);
+				ScriptContext.GlobalScriptContext.Push(pathindex);
+				ScriptContext.GlobalScriptContext.SetIdentifier(0x7D697B7C);
+				ScriptContext.GlobalScriptContext.Invoke();
+				ScriptContext.GlobalScriptContext.CheckErrors();
+			}
+		}
+
+		public static void SchemaNetworkStateChanged(IntPtr instance, uint offset, uint arrayindex, uint pathindex)
+		{
+			lock (ScriptContext.GlobalScriptContext.Lock)
+			{
+				ScriptContext.GlobalScriptContext.Reset();
+				ScriptContext.GlobalScriptContext.Push(instance);
+				ScriptContext.GlobalScriptContext.Push(offset);
+				ScriptContext.GlobalScriptContext.Push(arrayindex);
+				ScriptContext.GlobalScriptContext.Push(pathindex);
+				ScriptContext.GlobalScriptContext.SetIdentifier(0xBBE9D700);
+				ScriptContext.GlobalScriptContext.Invoke();
+				ScriptContext.GlobalScriptContext.CheckErrors();
 			}
 		}
 

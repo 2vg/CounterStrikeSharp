@@ -1,6 +1,19 @@
-# Changelog
+## What's Changed in v1.0.331
+* fix: revert chat command hooking back to detour of Host_Say ([356152a](https://github.com/roflmuffin/CounterStrikeSharp/commit/356152a567a756da47e6584d05fca331feb849aa))
 
-All notable changes to this project will be documented in this file.
+## What's Changed in v1.0.330
+* fix: `CheckTransmit` hook not firing by [@samyycX](https://github.com/samyycX) in [#966](https://github.com/roflmuffin/CounterStrikeSharp/pull/966) ([529a0cb](https://github.com/roflmuffin/CounterStrikeSharp/commit/529a0cbf5b1c67396469c85f6965bdc5b2891507))
+
+## What's Changed in v1.0.329
+* fix: Update CS# for Patch 19388062 in [#958](https://github.com/roflmuffin/CounterStrikeSharp/pull/958) ([1f30e56](https://github.com/roflmuffin/CounterStrikeSharp/commit/1f30e5619ff7f89f0980745169f8223c841b30c8))
+* chore: schema update for patch 19388062 in [#962](https://github.com/roflmuffin/CounterStrikeSharp/pull/962) ([af3bb52](https://github.com/roflmuffin/CounterStrikeSharp/commit/af3bb528d700a9e031c01c2509cb3cd1cb15fa85))
+* chore: update Gamedata for Patch 19388062 by [@K4ryuu](https://github.com/K4ryuu) in [#952](https://github.com/roflmuffin/CounterStrikeSharp/pull/952) ([b7abd1d](https://github.com/roflmuffin/CounterStrikeSharp/commit/b7abd1d59e34614f3ed822c5b3ec10c5dd8a70ef))
+* feat: add `OnPlayerButtonsChanged` listener in [#942](https://github.com/roflmuffin/CounterStrikeSharp/pull/942) ([dd50221](https://github.com/roflmuffin/CounterStrikeSharp/commit/dd502213214247c91bdcf35c5046636a7c31ec9c))
+* feat: add Vector3 and QAngle explicit casts to System.Numerics.Vector3 in [#943](https://github.com/roflmuffin/CounterStrikeSharp/pull/943) ([9491732](https://github.com/roflmuffin/CounterStrikeSharp/commit/9491732a38f6d79474cdf92a7f94af8536afb1c4))
+* feat: add `OnServerPreEntityThink` and `OnServerPostEntityThink` listeners in [#941](https://github.com/roflmuffin/CounterStrikeSharp/pull/941) ([6c9321e](https://github.com/roflmuffin/CounterStrikeSharp/commit/6c9321e3e7288227af4a98cd6de8e3c99f4c71d7))
+
+## New Contributors
+* [@K4ryuu](https://github.com/K4ryuu) made their first contribution in [#952](https://github.com/roflmuffin/CounterStrikeSharp/pull/952)
 
 ## What's Changed in v1.0.328
 * feat: add `css_dump_leaks` command which outputs vector/angle count ([ad8116d](https://github.com/roflmuffin/CounterStrikeSharp/commit/ad8116d4d2c2cd05f3045eb33a06ba4c3d08e49f))

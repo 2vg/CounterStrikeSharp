@@ -31,6 +31,9 @@
 
 #include "core/managers/con_command_manager.h"
 
+#include "chat_manager.h"
+#include "entitysystem.h"
+
 #include <nlohmann/json.hpp>
 #include <public/eiface.h>
 #include <schemasystem.h>
