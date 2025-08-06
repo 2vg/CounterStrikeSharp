@@ -1,6 +1,32 @@
-# Changelog
+## What's Changed in v1.0.333
+* perf: cache `Server.MaxPlayers` to improve performance of `Utilities.GetPlayers()` ([1f9c7a0](https://github.com/roflmuffin/CounterStrikeSharp/commit/1f9c7a090bf39b3bcf54a34a62962de1f4cf501b))
+* feat: add `OnPlayerChat` listener in [#973](https://github.com/roflmuffin/CounterStrikeSharp/pull/973) ([2cf2d45](https://github.com/roflmuffin/CounterStrikeSharp/commit/2cf2d45e8e2f86f6a51c1e7e6c118d9333efea58))
+* chore: apply alliedmodders hl2sdk again in [#974](https://github.com/roflmuffin/CounterStrikeSharp/pull/974) ([fa383cd](https://github.com/roflmuffin/CounterStrikeSharp/commit/fa383cda68e91ff618d2f6e2c67a17b9d25a1a11))
 
-All notable changes to this project will be documented in this file.
+## What's Changed in v1.0.332
+* fix: re-enable `EmitSoundFilter` by [@samyycX](https://github.com/samyycX) in [#968](https://github.com/roflmuffin/CounterStrikeSharp/pull/968) ([dc503e7](https://github.com/roflmuffin/CounterStrikeSharp/commit/dc503e7f57a6d0320f211f00309519555a0cdd29))
+* fix: update GetHitGroup offset by [@wiruwiru](https://github.com/wiruwiru) in [#970](https://github.com/roflmuffin/CounterStrikeSharp/pull/970) ([fedfe75](https://github.com/roflmuffin/CounterStrikeSharp/commit/fedfe756012a2db8c0d4d1fd2161a05ced064924))
+* fix: crash caused by `AddEntityIOEvent` by [@samyycX](https://github.com/samyycX) in [#969](https://github.com/roflmuffin/CounterStrikeSharp/pull/969) ([3508fdf](https://github.com/roflmuffin/CounterStrikeSharp/commit/3508fdfd8c46231a2ff523c8561f7a909cca8db8))
+
+## New Contributors
+* [@wiruwiru](https://github.com/wiruwiru) made their first contribution in [#970](https://github.com/roflmuffin/CounterStrikeSharp/pull/970)
+
+## What's Changed in v1.0.331
+* fix: revert chat command hooking back to detour of Host_Say ([356152a](https://github.com/roflmuffin/CounterStrikeSharp/commit/356152a567a756da47e6584d05fca331feb849aa))
+
+## What's Changed in v1.0.330
+* fix: `CheckTransmit` hook not firing by [@samyycX](https://github.com/samyycX) in [#966](https://github.com/roflmuffin/CounterStrikeSharp/pull/966) ([529a0cb](https://github.com/roflmuffin/CounterStrikeSharp/commit/529a0cbf5b1c67396469c85f6965bdc5b2891507))
+
+## What's Changed in v1.0.329
+* fix: Update CS# for Patch 19388062 in [#958](https://github.com/roflmuffin/CounterStrikeSharp/pull/958) ([1f30e56](https://github.com/roflmuffin/CounterStrikeSharp/commit/1f30e5619ff7f89f0980745169f8223c841b30c8))
+* chore: schema update for patch 19388062 in [#962](https://github.com/roflmuffin/CounterStrikeSharp/pull/962) ([af3bb52](https://github.com/roflmuffin/CounterStrikeSharp/commit/af3bb528d700a9e031c01c2509cb3cd1cb15fa85))
+* chore: update Gamedata for Patch 19388062 by [@K4ryuu](https://github.com/K4ryuu) in [#952](https://github.com/roflmuffin/CounterStrikeSharp/pull/952) ([b7abd1d](https://github.com/roflmuffin/CounterStrikeSharp/commit/b7abd1d59e34614f3ed822c5b3ec10c5dd8a70ef))
+* feat: add `OnPlayerButtonsChanged` listener in [#942](https://github.com/roflmuffin/CounterStrikeSharp/pull/942) ([dd50221](https://github.com/roflmuffin/CounterStrikeSharp/commit/dd502213214247c91bdcf35c5046636a7c31ec9c))
+* feat: add Vector3 and QAngle explicit casts to System.Numerics.Vector3 in [#943](https://github.com/roflmuffin/CounterStrikeSharp/pull/943) ([9491732](https://github.com/roflmuffin/CounterStrikeSharp/commit/9491732a38f6d79474cdf92a7f94af8536afb1c4))
+* feat: add `OnServerPreEntityThink` and `OnServerPostEntityThink` listeners in [#941](https://github.com/roflmuffin/CounterStrikeSharp/pull/941) ([6c9321e](https://github.com/roflmuffin/CounterStrikeSharp/commit/6c9321e3e7288227af4a98cd6de8e3c99f4c71d7))
+
+## New Contributors
+* [@K4ryuu](https://github.com/K4ryuu) made their first contribution in [#952](https://github.com/roflmuffin/CounterStrikeSharp/pull/952)
 
 ## What's Changed in v1.0.328
 * feat: add `css_dump_leaks` command which outputs vector/angle count ([ad8116d](https://github.com/roflmuffin/CounterStrikeSharp/commit/ad8116d4d2c2cd05f3045eb33a06ba4c3d08e49f))

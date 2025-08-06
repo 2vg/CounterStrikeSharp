@@ -125,12 +125,18 @@ SchemaKey schema::GetOffset(const char* className, uint32_t classKey, const char
     return tableMap->Element(memberIndex);
 }
 
-void SetStateChanged(Z_CBaseEntity* pEntity, int offset)
+void NetworkStateChanged(uintptr_t chainEntity, uint32_t offset, uint32_t nArrayIndex, uint32_t nPathIndex)
 {
-    // addresses::StateChanged(pEntity->m_NetworkTransmitComponent(), pEntity, offset, -1, -1);
-    auto vars = counterstrikesharp::globals::getGlobalVars();
+    CNetworkStateChangedInfo info(offset, nArrayIndex, nPathIndex);
 
-    // if (vars) pEntity->m_lastNetworkChange = vars->curtime;
+    if (counterstrikesharp::globals::NetworkStateChanged)
+        counterstrikesharp::globals::NetworkStateChanged(reinterpret_cast<void*>(chainEntity), info);
+}
 
-    // pEntity->m_isSteadyState().ClearAll();
-};
+void SetStateChanged(uintptr_t pEntity, uint32_t offset, uint32_t nArrayIndex, uint32_t nPathIndex)
+{
+    CNetworkStateChangedInfo info(offset, nArrayIndex, nPathIndex);
+
+    static auto fnOffset = counterstrikesharp::globals::gameConfig->GetOffset("SetStateChanged");
+    CALL_VIRTUAL(void, fnOffset, (void*)pEntity, &info);
+}

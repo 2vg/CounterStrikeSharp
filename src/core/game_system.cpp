@@ -22,6 +22,7 @@
 #include "core/gameconfig.h"
 #include "core/game_system.h"
 #include "core/managers/server_manager.h"
+#include "core/managers/player_manager.h"
 #include "scripting/callback_manager.h"
 #include <tier0/vprof.h>
 
@@ -69,7 +70,7 @@ GS_EVENT_MEMBER(CGameSystem, BuildGameSessionManifest)
 
 GS_EVENT_MEMBER(CGameSystem, ServerPreEntityThink)
 {
-    VPROF_BUDGET("CS#::CGameSystem::ServerPreEntityThink", "CS# On Frame");
+    // VPROF_BUDGET("CS#::CGameSystem::ServerPreEntityThink", "CS# On Frame");
     auto callback = counterstrikesharp::globals::serverManager.on_server_pre_entity_think;
 
     if (callback && callback->GetFunctionCount())
@@ -77,11 +78,17 @@ GS_EVENT_MEMBER(CGameSystem, ServerPreEntityThink)
         callback->ScriptContext().Reset();
         callback->Execute();
     }
+
+    auto globals = counterstrikesharp::globals::getGlobalVars();
+    if (globals && globals->m_bInSimulation)
+    {
+        counterstrikesharp::globals::playerManager.RunThink();
+    }
 }
 
 GS_EVENT_MEMBER(CGameSystem, ServerPostEntityThink)
 {
-    VPROF_BUDGET("CS#::CGameSystem::ServerPostEntityThink", "CS# On Frame");
+    // VPROF_BUDGET("CS#::CGameSystem::ServerPostEntityThink", "CS# On Frame");
     auto callback = counterstrikesharp::globals::serverManager.on_server_post_entity_think;
 
     if (callback && callback->GetFunctionCount())

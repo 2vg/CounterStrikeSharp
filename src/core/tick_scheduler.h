@@ -16,8 +16,9 @@
 
 #include <functional>
 #include <queue>
-#include <mutex>
-#include <condition_variable>
+#include <vector>
+#include <algorithm>
+#include "../libraries/moodycamel/concurrentqueue.h"
 
 namespace counterstrikesharp {
 class TickScheduler
@@ -35,8 +36,6 @@ class TickScheduler
     std::vector<std::function<void()>> getCallbacks(int currentTick);
 
   private:
-    std::priority_queue<std::pair<int, std::function<void()>>, std::vector<std::pair<int, std::function<void()>>>, TaskComparator>
-        scheduledTasks;
-    std::mutex taskMutex;
+    moodycamel::ConcurrentQueue<std::pair<int, std::function<void()>>> scheduledTasks;
 };
 } // namespace counterstrikesharp

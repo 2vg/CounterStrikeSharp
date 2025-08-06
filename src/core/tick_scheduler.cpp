@@ -20,26 +20,30 @@ namespace counterstrikesharp {
 
 void TickScheduler::schedule(int tick, std::function<void()> callback)
 {
-    std::lock_guard<std::mutex> lock(taskMutex);
-    scheduledTasks.push(std::make_pair(tick, callback));
+    scheduledTasks.enqueue(std::make_pair(tick, callback));
 }
 
 std::vector<std::function<void()>> TickScheduler::getCallbacks(int currentTick)
 {
     std::vector<std::function<void()>> callbacksToRun;
+    std::vector<std::pair<int, std::function<void()>>> allTasks;
+    std::pair<int, std::function<void()>> task;
 
-    std::lock_guard<std::mutex> lock(taskMutex);
-
-    if (scheduledTasks.empty())
+    while (scheduledTasks.try_dequeue(task))
     {
-        return callbacksToRun;
+        if (task.first <= currentTick)
+        {
+            callbacksToRun.push_back(task.second);
+        }
+        else
+        {
+            allTasks.push_back(task);
+        }
     }
 
-    // Process tasks due for the current tick
-    while (!scheduledTasks.empty() && scheduledTasks.top().first <= currentTick)
+    for (const auto& remainingTask : allTasks)
     {
-        callbacksToRun.push_back(scheduledTasks.top().second);
-        scheduledTasks.pop();
+        scheduledTasks.enqueue(remainingTask);
     }
 
     return callbacksToRun;

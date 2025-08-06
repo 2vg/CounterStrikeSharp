@@ -184,6 +184,25 @@ namespace CounterStrikeSharp.API.Core
         public delegate void CheckTransmit([CastFrom(typeof(nint))] CCheckTransmitInfoList infoList);
 
         /// <summary>
+        /// Called in the entity pre-think when the player's buttons have changed.
+        /// </summary>
+        /// <param name="player"></param>
+        /// <param name="pressed"></param>
+        /// <param name="released"></param>
+        [ListenerName("OnPlayerButtonsChanged")]
+        public delegate void OnPlayerButtonsChanged(CCSPlayerController player, PlayerButtons pressed, PlayerButtons released);
+
+
+        /// <summary>
+        /// Called when a player sends a chat message.
+        /// </summary>
+        /// <param name="player">The player who sent the chat message.</param>
+        /// <param name="message">The content of the chat message.</param>
+        /// <param name="teamChat">If the chat message was sent to team only.</param>
+        [ListenerName("OnPlayerChat")]
+        public delegate void OnPlayerChat(CCSPlayerController player, string message, bool teamChat);
+
+        /// <summary>
         /// Called when all metamod plugins are loaded.
         /// </summary>
         [ListenerName("OnMetamodAllPluginsLoaded")]

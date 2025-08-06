@@ -735,6 +735,7 @@ static void UserMessageSend(ScriptContext& scriptContext)
     auto message = scriptContext.GetArgument<UserMessage*>(0);
 
     CRecipientFilter filter{};
+
     filter.AddRecipientsFromMask(message->GetRecipientMask() ? *message->GetRecipientMask() : 0);
 
     // This is for calling send in a UM hook, if calling normal send using the UM instance from the UM hook, it will cause an inifinite
