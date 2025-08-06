@@ -24,6 +24,7 @@
 #include "scripting/script_engine.h"
 #include "entitysystem.h"
 #include "scripting/callback_manager.h"
+#include "core/recipientfilters.h"
 
 #include <variant.h>
 
@@ -232,10 +233,11 @@ struct SndOpEventGuid_t
 {
     SoundEventGuid_t m_nGuid;
     uint64 m_hStackHash;
+    uint64 pad; // size might be incorrect
 };
 
-inline SndOpEventGuid_t(FASTCALL* CBaseEntity_EmitSoundFilter)(IRecipientFilter& filter, CEntityIndex ent, const EmitSound_t& params);
+inline SndOpEventGuid_t(FASTCALL* CBaseEntity_EmitSoundFilter)(CRecipientFilter& filter, CEntityIndex ent, const EmitSound_t& params);
 
 SndOpEventGuid_t
-EntityEmitSoundFilter(IRecipientFilter& filter, uint32 ent, const char* pszSound, float flVolume = 1.0f, float flPitch = 1.0f);
+EntityEmitSoundFilter(CRecipientFilter& filter, uint32 ent, const char* pszSound, float flVolume = 1.0f, float flPitch = 1.0f);
 } // namespace counterstrikesharp
