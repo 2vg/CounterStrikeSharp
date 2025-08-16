@@ -53,20 +53,20 @@ namespace CounterStrikeSharp.API.Core
 
         public abstract string ModuleName { get; }
         public abstract string ModuleVersion { get; }
-        
+
         public virtual string ModuleAuthor { get; }
-        
+
         public virtual string ModuleDescription { get; }
 
         public string ModulePath { get; set; }
 
         public string ModuleDirectory => Path.GetDirectoryName(ModulePath);
         public ILogger Logger { get; set; }
-        
+
         public ICommandManager CommandManager { get; set; }
 
         public IStringLocalizer Localizer { get; set; }
-        
+
         public virtual void Load(bool hotReload)
         {
         }
@@ -74,7 +74,7 @@ namespace CounterStrikeSharp.API.Core
         public virtual void Unload(bool hotReload)
         {
         }
-        
+
         public virtual void OnAllPluginsLoaded(bool hotReload)
         {
         }
@@ -116,7 +116,7 @@ namespace CounterStrikeSharp.API.Core
 
         public readonly Dictionary<Delegate, CallbackSubscriber> Handlers =
             new Dictionary<Delegate, CallbackSubscriber>();
-        
+
         public readonly Dictionary<Delegate, CallbackSubscriber> CommandListeners =
             new Dictionary<Delegate, CallbackSubscriber>();
 
@@ -132,7 +132,7 @@ namespace CounterStrikeSharp.API.Core
         public readonly List<CommandDefinition> CommandDefinitions = new List<CommandDefinition>();
 
         public readonly List<Timer> Timers = new List<Timer>();
-        
+
         public delegate HookResult GameEventHandler<T>(T @event, GameEventInfo info) where T : GameEvent;
 
         private void RegisterEventHandlerInternal<T>(string name, GameEventHandler<T> handler, bool post)
@@ -156,7 +156,7 @@ namespace CounterStrikeSharp.API.Core
             var name = typeof(T).GetCustomAttribute<EventNameAttribute>()?.Name;
             RegisterEventHandlerInternal(name, handler, hookMode == HookMode.Post);
         }
-        
+
         /// <summary>
         /// De-registers a game event handler.
         /// </summary>
@@ -164,7 +164,7 @@ namespace CounterStrikeSharp.API.Core
         public void DeregisterEventHandler<T>(GameEventHandler<T> handler, HookMode hookMode = HookMode.Post) where T : GameEvent
         {
             var name = typeof(T).GetCustomAttribute<EventNameAttribute>()!.Name;
-            
+
             if (!Handlers.TryGetValue(handler, out var subscriber)) return;
 
             NativeAPI.UnhookEvent(name, subscriber.GetInputArgument(), hookMode == HookMode.Post);
@@ -195,7 +195,7 @@ namespace CounterStrikeSharp.API.Core
             CommandDefinitions.Add(definition);
             CommandManager.RegisterCommand(definition);
         }
-        
+
         private void AddCommand(CommandDefinition definition)
         {
             CommandDefinitions.Add(definition);
@@ -319,9 +319,9 @@ namespace CounterStrikeSharp.API.Core
                 throw new ArgumentException("Listener of type T is invalid and does not have a name attribute",
                     nameof(T));
             }
-            
+
             if (!Listeners.TryGetValue(handler, out var subscriber)) return;
-            
+
             NativeAPI.RemoveListener(listenerName, subscriber.GetInputArgument());
             FunctionReference.Remove(subscriber.GetReferenceIdentifier());
             Listeners.Remove(handler);
@@ -408,7 +408,7 @@ namespace CounterStrikeSharp.API.Core
                 .Where(method =>
                     method.GetParameters().FirstOrDefault()?.ParameterType.IsSubclassOf(typeof(GameEvent)) == true)
                 .ToArray();
-            
+
             var listenerHandlers = methods
                 .Where(method => method.GetCustomAttribute(typeof(ListenerHandlerAttribute<>)) != null)
                 .ToArray();
@@ -440,7 +440,7 @@ namespace CounterStrikeSharp.API.Core
                     throw new ArgumentException("Listener of type T is invalid and does not have a name attribute",
                         listenerType.Name);
 
-                var listenerDelegate = Delegate.CreateDelegate(listenerType, instance, listnerHandler); 
+                var listenerDelegate = Delegate.CreateDelegate(listenerType, instance, listnerHandler);
 
                 registerListener.MakeGenericMethod(listenerType).Invoke(this, [listenerDelegate]);
             }
@@ -500,39 +500,149 @@ namespace CounterStrikeSharp.API.Core
 
         public void RegisterFakeConVars(Type type, object instance = null)
         {
+            // Register FakeConVar fields
             var convars = type
                 .GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
-                .Where(prop => prop.FieldType.IsGenericType && 
+                .Where(prop => prop.FieldType.IsGenericType &&
                                prop.FieldType.GetGenericTypeDefinition() == typeof(FakeConVar<>));
-            
+
             foreach (var prop in convars)
             {
                 object propValue = prop.GetValue(instance); // FakeConvar<?> instance
-                var propValueType = prop.FieldType.GenericTypeArguments[0];
-                var name = prop.FieldType.GetProperty("Name", BindingFlags.Public | BindingFlags.Instance)
-                    .GetValue(propValue);
-                
-                var description = prop.FieldType.GetProperty("Description", BindingFlags.Public | BindingFlags.Instance)
-                    .GetValue(propValue);
-
-                MethodInfo executeCommandMethod = prop.FieldType
-                    .GetMethod("ExecuteCommand", BindingFlags.Instance | BindingFlags.NonPublic);
-              
-                this.AddCommand((string)name, (string) description, (caller, command) =>
+                if (propValue != null)
                 {
-                    executeCommandMethod.Invoke(propValue, new object[] {caller, command});
+                    RegisterSingleFakeConVar(propValue, prop.FieldType);
+                }
+            }
+
+            // Register FakeConVar values in Dictionary fields
+            var dictionaryFields = type
+                .GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
+                .Where(field => field.FieldType.IsGenericType &&
+                               field.FieldType.GetGenericTypeDefinition() == typeof(Dictionary<,>) &&
+                               field.FieldType.GetGenericArguments().Length == 2 &&
+                               field.FieldType.GetGenericArguments()[1].IsGenericType &&
+                               field.FieldType.GetGenericArguments()[1].GetGenericTypeDefinition() == typeof(FakeConVar<>));
+
+            foreach (var field in dictionaryFields)
+            {
+                var dictionaryValue = field.GetValue(instance);
+                if (dictionaryValue != null)
+                {
+                    var valueType = field.FieldType.GetGenericArguments()[1]; // FakeConVar<T> type
+                    RegisterFakeConVarsFromDictionary(dictionaryValue, valueType);
+                }
+            }
+
+            // Register FakeConVar values in Dictionary properties
+            var dictionaryProperties = type
+                .GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
+                .Where(prop => prop.CanRead &&
+                              prop.PropertyType.IsGenericType &&
+                              prop.PropertyType.GetGenericTypeDefinition() == typeof(Dictionary<,>) &&
+                              prop.PropertyType.GetGenericArguments().Length == 2 &&
+                              prop.PropertyType.GetGenericArguments()[1].IsGenericType &&
+                              prop.PropertyType.GetGenericArguments()[1].GetGenericTypeDefinition() == typeof(FakeConVar<>));
+
+            foreach (var prop in dictionaryProperties)
+            {
+                var dictionaryValue = prop.GetValue(instance);
+                if (dictionaryValue != null)
+                {
+                    var valueType = prop.PropertyType.GetGenericArguments()[1]; // FakeConVar<T> type
+                    RegisterFakeConVarsFromDictionary(dictionaryValue, valueType);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Helper method to register FakeConVars from a Dictionary
+        /// </summary>
+        /// <param name="dictionary">Dictionary containing FakeConVar values</param>
+        /// <param name="fakeConVarType">Type of FakeConVar&lt;T&gt;</param>
+        private void RegisterFakeConVarsFromDictionary(object dictionary, Type fakeConVarType)
+        {
+            var dictionaryType = dictionary.GetType();
+            var valuesProperty = dictionaryType.GetProperty("Values");
+            if (valuesProperty != null)
+            {
+                var values = valuesProperty.GetValue(dictionary);
+                if (values is System.Collections.IEnumerable enumerable)
+                {
+                    foreach (var value in enumerable)
+                    {
+                        if (value != null)
+                        {
+                            RegisterSingleFakeConVar(value, fakeConVarType);
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Helper method to register a single FakeConVar instance
+        /// </summary>
+        /// <param name="fakeConVarInstance">FakeConVar instance</param>
+        /// <param name="fakeConVarType">Type of FakeConVar&lt;T&gt;</param>
+        private void RegisterSingleFakeConVar(object fakeConVarInstance, Type fakeConVarType)
+        {
+            var name = fakeConVarType.GetProperty("Name", BindingFlags.Public | BindingFlags.Instance)
+                ?.GetValue(fakeConVarInstance);
+
+            var description = fakeConVarType.GetProperty("Description", BindingFlags.Public | BindingFlags.Instance)
+                ?.GetValue(fakeConVarInstance);
+
+            MethodInfo executeCommandMethod = fakeConVarType
+                .GetMethod("ExecuteCommand", BindingFlags.Instance | BindingFlags.NonPublic);
+
+            if (name != null && description != null && executeCommandMethod != null)
+            {
+                this.AddCommand((string)name, (string)description, (caller, command) =>
+                {
+                    executeCommandMethod.Invoke(fakeConVarInstance, new object[] { caller, command });
                 });
             }
         }
-        
+
         /// <summary>
         /// Used to bind a fake ConVar to a plugin command. Only required for ConVars that are not public properties of the plugin class.
         /// </summary>
-        /// <param name="convar"></param>
-        /// <typeparam name="T"></typeparam>
+        /// <param name="instance">Instance containing FakeConVar fields/properties</param>
         public void RegisterFakeConVars(object instance)
         {
             RegisterFakeConVars(instance.GetType(), instance);
+        }
+
+        /// <summary>
+        /// Registers FakeConVars from a Dictionary containing FakeConVar values.
+        /// </summary>
+        /// <param name="dictionary">Dictionary containing FakeConVar instances as values</param>
+        /// <typeparam name="TKey">Type of dictionary key</typeparam>
+        /// <typeparam name="TValue">Type of FakeConVar value (must be FakeConVar&lt;T&gt;)</typeparam>
+        public void RegisterFakeConVars<TKey, TValue>(Dictionary<TKey, TValue> dictionary)
+        {
+            if (dictionary == null) return;
+
+            var valueType = typeof(TValue);
+            if (!valueType.IsGenericType || valueType.GetGenericTypeDefinition() != typeof(FakeConVar<>))
+            {
+                throw new ArgumentException($"TValue must be FakeConVar<T>, but was {valueType.Name}", nameof(dictionary));
+            }
+
+            RegisterFakeConVarsFromDictionary(dictionary, valueType);
+        }
+
+        /// <summary>
+        /// Registers a single FakeConVar instance.
+        /// </summary>
+        /// <param name="fakeConVar">FakeConVar instance to register</param>
+        /// <typeparam name="T">Type parameter of FakeConVar&lt;T&gt;</typeparam>
+        public void RegisterFakeConVar<T>(FakeConVar<T> fakeConVar) where T : IComparable<T>
+        {
+            if (fakeConVar == null) return;
+
+            RegisterSingleFakeConVar(fakeConVar, typeof(FakeConVar<T>));
         }
 
         /// <summary>
@@ -549,7 +659,7 @@ namespace CounterStrikeSharp.API.Core
             NativeAPI.HookEntityOutput(classname, outputName, subscriber.GetInputArgument(), mode);
             EntityOutputHooks[handler] = subscriber;
         }
-        
+
         public void HookUserMessage(int messageId, UserMessage.UserMessageHandler handler, HookMode mode = HookMode.Pre)
         {
             var subscriber = new CallbackSubscriber(handler, handler,
@@ -558,7 +668,7 @@ namespace CounterStrikeSharp.API.Core
             NativeAPI.HookUsermessage(messageId, subscriber.GetInputArgument(), mode);
             Handlers[handler] = subscriber;
         }
-        
+
         public void UnhookUserMessage(int messageId, UserMessage.UserMessageHandler handler, HookMode mode = HookMode.Pre)
         {
             if (!Handlers.TryGetValue(handler, out var subscriber)) return;
@@ -641,7 +751,7 @@ namespace CounterStrikeSharp.API.Core
             {
                 subscriber.Dispose();
             }
-            
+
             foreach (var subscriber in CommandListeners.Values)
             {
                 subscriber.Dispose();

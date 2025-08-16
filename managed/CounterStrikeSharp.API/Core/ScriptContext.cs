@@ -24,12 +24,17 @@
  */
 
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
+using System.Threading;
 using CounterStrikeSharp.API.Modules.Utils;
+using Cysharp.Text;
+using Utf8StringInterpolation;
 
 namespace CounterStrikeSharp.API.Core
 {
@@ -75,13 +80,13 @@ namespace CounterStrikeSharp.API.Core
 			m_extContext = *context;
 		}
 
-		private readonly ConcurrentQueue<Action> ms_finalizers = new ConcurrentQueue<Action>();
+		private readonly ConcurrentQueue<IntPtr> ms_finalizers = new ConcurrentQueue<IntPtr>();
 
 		private readonly object ms_lock = new object();
 
 		internal object Lock => ms_lock;
 
-		internal fxScriptContext m_extContext = new fxScriptContext();
+		public fxScriptContext m_extContext = new fxScriptContext();
 
 		internal bool isCleanupLocked = false;
 
@@ -161,9 +166,27 @@ namespace CounterStrikeSharp.API.Core
 		[SecurityCritical]
 		private unsafe void PushInternal(object arg)
 		{
-			fixed (fxScriptContext* context = &m_extContext)
+			if (arg is null) arg = 0;
+
+			if (arg is Enum en) arg = EnumToUnderlying(en);
+
+			if (arg is string s) { PushString(s); return; }
+			if (arg is InputArgument ia) { Push(ia.Value); return; }
+			if (arg is IMarshalToNative mt) { foreach (var v in mt.GetNativeObject()) Push(v); return; }
+			if (arg is NativeObject no) { Push((InputArgument)no); return; }
+			if (arg is NativeEntity ne) { Push((InputArgument)ne); return; }
+
+			fixed (fxScriptContext* ctx = &m_extContext)
 			{
-				Push(context, arg);
+				if (IsPrimitive8(arg))
+				{
+					PushUnsafeZ(ctx, arg);
+				}
+				else
+				{
+					Marshal.StructureToPtr(arg, new IntPtr(ctx->functionData + 8 * ctx->numArguments), true);
+				}
+				ctx->numArguments++;
 			}
 		}
 
@@ -244,50 +267,84 @@ namespace CounterStrikeSharp.API.Core
 		}
 
 		[SecurityCritical]
-		internal unsafe void SetResultInternal(fxScriptContext* context, object arg)
+		internal unsafe void SetResultInternal(fxScriptContext* ctx, object arg)
 		{
-			if (arg == null)
-			{
-				arg = 0;
-			}
+			if (arg is null) arg = 0;
+			if (arg is Enum en) arg = EnumToUnderlying(en);
 
-			if (arg.GetType().IsEnum)
-			{
-				arg = Convert.ChangeType(arg, arg.GetType().GetEnumUnderlyingType());
-			}
+			if (arg is string s) { SetResultString(ctx, s); return; }
+			if (arg is InputArgument ia) { SetResultInternal(ctx, ia.Value); return; }
 
-			if (arg is string)
-			{
-				var str = (string)Convert.ChangeType(arg, typeof(string));
-				SetResultString(context, str);
-
-				return;
-			}
-			else if (arg is InputArgument ia)
-			{
-				SetResultInternal(context, ia.Value);
-
-				return;
-			}
-
-			if (Marshal.SizeOf(arg.GetType()) <= 8)
-			{
-				SetResultUnsafe(context, arg);
-			}
+			if (IsPrimitive8(arg))
+				SetResultUnsafeZ(ctx, arg);
+			else
+				Marshal.StructureToPtr(arg, new IntPtr(ctx->result), true);
 		}
 
 		[SecurityCritical]
 		internal unsafe void PushUnsafe(fxScriptContext* cxt, object arg)
 		{
-			*(long*)(&cxt->functionData[8 * cxt->numArguments]) = 0;
-			Marshal.StructureToPtr(arg, new IntPtr(cxt->functionData + (8 * cxt->numArguments)), true);
+			//*(long*)(&cxt->functionData[8 * cxt->numArguments]) = 0;
+			//Marshal.StructureToPtr(arg, new IntPtr(cxt->functionData + (8 * cxt->numArguments)), true);
+			PushUnsafeZ(cxt, arg);
 		}
 
 		[SecurityCritical]
 		internal unsafe void SetResultUnsafe(fxScriptContext* cxt, object arg)
 		{
-			*(long*)(&cxt->result[0]) = 0;
-			Marshal.StructureToPtr(arg, new IntPtr(cxt->result), true);
+			//*(long*)(&cxt->result[0]) = 0;
+			//Marshal.StructureToPtr(arg, new IntPtr(cxt->result), true);
+			SetResultUnsafeZ(cxt, arg);
+		}
+
+		[SecurityCritical]
+		internal unsafe void PushUnsafeZ(fxScriptContext* cxt, object arg)
+		{
+			byte* slot = cxt->functionData + 8 * cxt->numArguments;
+
+			switch (arg)
+			{
+				case int v: WriteValue(slot, v); break;
+				case uint v: WriteValue(slot, v); break;
+				case long v: WriteValue(slot, v); break;
+				case ulong v: WriteValue(slot, v); break;
+				case float v: WriteValue(slot, v); break;
+				case double v: WriteValue(slot, v); break;
+				case bool v: WriteValue(slot, v ? (byte)1 : (byte)0); break;
+				case IntPtr v: WriteValue(slot, v); break;
+				case byte v: WriteValue(slot, v); break;
+				case sbyte v: WriteValue(slot, v); break;
+				case char v: WriteValue(slot, v); break;
+				case short v: WriteValue(slot, v); break;
+				case ushort v: WriteValue(slot, v); break;
+				default:
+					Marshal.StructureToPtr(arg, new IntPtr(slot), true); break;
+			}
+		}
+
+		[SecurityCritical]
+		internal unsafe void SetResultUnsafeZ(fxScriptContext* cxt, object arg)
+		{
+			byte* slot = cxt->result;
+
+			switch (arg)
+			{
+				case int v: WriteValue(slot, v); break;
+				case uint v: WriteValue(slot, v); break;
+				case long v: WriteValue(slot, v); break;
+				case ulong v: WriteValue(slot, v); break;
+				case float v: WriteValue(slot, v); break;
+				case double v: WriteValue(slot, v); break;
+				case bool v: WriteValue(slot, v ? (byte)1 : (byte)0); break;
+				case IntPtr v: WriteValue(slot, v); break;
+				case byte v: WriteValue(slot, v); break;
+				case sbyte v: WriteValue(slot, v); break;
+				case char v: WriteValue(slot, v); break;
+				case short v: WriteValue(slot, v); break;
+				case ushort v: WriteValue(slot, v); break;
+				default:
+					Marshal.StructureToPtr(arg, new IntPtr(slot), true); break;
+			}
 		}
 
 		[SecurityCritical]
@@ -303,17 +360,11 @@ namespace CounterStrikeSharp.API.Core
 		internal unsafe void PushString(fxScriptContext* cxt, string str)
 		{
 			var ptr = IntPtr.Zero;
+			ptr = Utf8Interop.AllocUtf8Ultra(str);
 
 			if (str != null)
 			{
-				var b = Encoding.UTF8.GetBytes(str);
-
-				ptr = Marshal.AllocHGlobal(b.Length + 1);
-
-				Marshal.Copy(b, 0, ptr, b.Length);
-				Marshal.WriteByte(ptr, b.Length, 0);
-
-				ms_finalizers.Enqueue(() => Free(ptr));
+				ms_finalizers.Enqueue(ptr);
 			}
 
 			unsafe
@@ -328,17 +379,11 @@ namespace CounterStrikeSharp.API.Core
 		internal unsafe void SetResultString(fxScriptContext* cxt, string str)
 		{
 			var ptr = IntPtr.Zero;
+			ptr = Utf8Interop.AllocUtf8Ultra(str);
 
 			if (str != null)
 			{
-				var b = Encoding.UTF8.GetBytes(str);
-
-				ptr = Marshal.AllocHGlobal(b.Length + 1);
-
-				Marshal.Copy(b, 0, ptr, b.Length);
-				Marshal.WriteByte(ptr, b.Length, 0);
-
-				ms_finalizers.Enqueue(() => Free(ptr));
+				ms_finalizers.Enqueue(ptr);
 			}
 
 			unsafe
@@ -348,9 +393,12 @@ namespace CounterStrikeSharp.API.Core
 		}
 
 		[SecuritySafeCritical]
-		private void Free(IntPtr ptr)
+		private unsafe void Free(IntPtr ptr)
 		{
-			Marshal.FreeHGlobal(ptr);
+			if (ptr != IntPtr.Zero)
+			{
+				NativeMemory.Free((void*)ptr);
+			}
 		}
 
 		[SecuritySafeCritical]
@@ -425,21 +473,7 @@ namespace CounterStrikeSharp.API.Core
 			if (type == typeof(string))
 			{
 				var nativeUtf8 = *(IntPtr*)&ptr[0];
-
-				if (nativeUtf8 == IntPtr.Zero)
-				{
-					return null;
-				}
-
-				var len = 0;
-				while (Marshal.ReadByte(nativeUtf8, len) != 0)
-				{
-					++len;
-				}
-
-				var buffer = new byte[len];
-				Marshal.Copy(nativeUtf8, buffer, 0, buffer.Length);
-				return Encoding.UTF8.GetString(buffer);
+				return Utf8PtrToString((byte*)nativeUtf8);
 			}
 
 			if (typeof(NativeObject).IsAssignableFrom(type))
@@ -476,25 +510,50 @@ namespace CounterStrikeSharp.API.Core
 		[SecurityCritical]
 		private unsafe object GetResultInternal(Type type, byte* ptr)
 		{
+			//return Unsafe.ReadUnaligned<object>(ref *ptr);
+			if (type == typeof(int))
+			{
+				return ReadValue<int>(ptr);
+			}
+			else if (type == typeof(uint))
+			{
+				return ReadValue<uint>(ptr);
+			}
+			else if (type == typeof(long))
+			{
+				return ReadValue<long>(ptr);
+			}
+			else if (type == typeof(ulong))
+			{
+				return ReadValue<ulong>(ptr);
+			}
+			else if (type == typeof(float))
+			{
+				return ReadValue<float>(ptr);
+			}
+			else if (type == typeof(double))
+			{
+				return ReadValue<double>(ptr);
+			}
+			else if (type == typeof(bool))
+			{
+				return ReadValue<byte>(ptr) != 0;
+			}
+			else if (type == typeof(IntPtr))
+			{
+				return new IntPtr(ReadValue<long>(ptr));
+			}
+
 			var obj = Marshal.PtrToStructure(new IntPtr(ptr), type);
 			return obj;
 		}
 
-
 		[SecurityCritical]
-		internal unsafe string ErrorHandler(byte* error)
+		public unsafe string ErrorHandler(byte* error)
 		{
 			if (error != null)
 			{
-				var errorStart = error;
-				int length = 0;
-
-				for (var p = errorStart; *p != 0; p++)
-				{
-					length++;
-				}
-
-				return Encoding.UTF8.GetString(errorStart, length);
+				return Utf8PtrToString(error);
 			}
 
 			return "Native invocation failed.";
@@ -502,18 +561,126 @@ namespace CounterStrikeSharp.API.Core
 
 		internal void GlobalCleanUp()
 		{
-			lock (ms_lock)
+			const int TimeBudgetUs = 500; // 0.5 ms - increased budget
+			var sw = Stopwatch.GetTimestamp();
+			long ticksBudget = TimeBudgetUs * Stopwatch.Frequency / 1_000_000;
+			int processedCount = 0;
+			const int MaxProcessPerFrame = 100; // Limit processing per frame
+
+			while (ms_finalizers.TryDequeue(out var ptr) && processedCount < MaxProcessPerFrame)
 			{
-				while (ms_finalizers.TryDequeue(out var cb))
-				{
-					cb();
-				}
+				Free(ptr);
+				processedCount++;
+
+				// Check time budget every 10 items to reduce overhead
+				if (processedCount % 10 == 0 && Stopwatch.GetTimestamp() - sw > ticksBudget)
+					break;
 			}
 		}
 
 		public override string ToString()
 		{
-			return $"ScriptContext{{numArgs={m_extContext.numArguments}}}";
+			return ZString.Format("ScriptContext{{numArgs={0}}}", m_extContext.numArguments);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static bool IsPrimitive8(object v) =>
+				v is int or uint or long or ulong or float or double or bool or IntPtr;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static object EnumToUnderlying(Enum e)
+		{
+			TypeCode code = Type.GetTypeCode(Enum.GetUnderlyingType(e.GetType()));
+			return code switch
+			{
+				TypeCode.Int32 => ((IConvertible)e).ToInt32(null),
+				TypeCode.UInt32 => ((IConvertible)e).ToUInt32(null),
+				TypeCode.Int64 => ((IConvertible)e).ToInt64(null),
+				_ => ((IConvertible)e).ToUInt64(null),
+			};
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static unsafe void WriteValue<T>(byte* dst, T value) where T : unmanaged
+		{
+			Debug.Assert(((nuint)dst % (uint)Unsafe.SizeOf<T>()) == 0);
+
+			ref byte r = ref Unsafe.AsRef<byte>(dst);
+			// For 8-byte primitives, zero-clearing is redundant.
+			// For types smaller than 8 bytes, we clear the slot to prevent garbage in the upper bytes.
+			if (Unsafe.SizeOf<T>() < 8)
+			{
+				*(long*)dst = 0;
+			}
+			Unsafe.WriteUnaligned(dst, value);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static unsafe T ReadValue<T>(byte* src) where T : unmanaged
+				=> Unsafe.ReadUnaligned<T>(src);
+
+		public static class Utf8Interop
+		{
+			// Removed buffer caching to eliminate race conditions and memory safety issues
+			// Direct allocation/deallocation is more predictable and safer
+
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
+			internal static unsafe IntPtr AllocUtf8(string? str)
+			{
+				if (str is null) return IntPtr.Zero;
+
+				const int StackLimit = 256; // byte
+				int maxLen = str.Length * 3;
+				Span<byte> utf8Buf = maxLen <= StackLimit
+								? stackalloc byte[StackLimit]
+								: ArrayPool<byte>.Shared.Rent(maxLen);
+
+				int written = Encoding.UTF8.GetBytes(str, utf8Buf);
+				var ptr = (byte*)System.Runtime.InteropServices.NativeMemory.Alloc((nuint)(written + 1));
+				utf8Buf.Slice(0, written).CopyTo(new Span<byte>(ptr, written));
+				ptr[written] = 0;
+
+				if (utf8Buf.Length > StackLimit)
+					ArrayPool<byte>.Shared.Return(utf8Buf.ToArray());
+
+				return (IntPtr)ptr;
+			}
+
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
+			public static unsafe IntPtr AllocUtf8Ultra(string? str)
+			{
+				if (str is null) return IntPtr.Zero;
+
+				var maxBytes = Encoding.UTF8.GetMaxByteCount(str.Length) + 1;
+				var ptr = (byte*)NativeMemory.Alloc((nuint)maxBytes);
+
+				if (ptr == null)
+				{
+					throw new OutOfMemoryException("Failed to allocate UTF8 buffer");
+				}
+
+				Span<byte> dst = new Span<byte>(ptr, maxBytes);
+				if (!Utf8String.TryFormat(dst, out var written, $"{str}"))
+				{
+					NativeMemory.Free(ptr);
+					throw new InvalidOperationException("Failed to format UTF8 string");
+				}
+
+				ptr[written] = 0;
+				return (IntPtr)ptr;
+			}
+
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static unsafe string Utf8PtrToString(byte* src)
+		{
+			if (src is null) return null;
+
+			byte* p = src;
+			while (*p != 0) ++p;
+			int len = (int)(p - src);
+			return Encoding.UTF8.GetString(new ReadOnlySpan<byte>(src, len));
 		}
 	}
 }

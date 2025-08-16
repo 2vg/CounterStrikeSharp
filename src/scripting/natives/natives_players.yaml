@@ -1,0 +1,27 @@
+CREATE_CONNECTED_PLAYERS_ITERATOR:
+  return: void*
+  args: []
+
+ITERATOR_HAS_NEXT:
+  return: bool
+  args:
+    - name: iterator
+      type: void*
+
+ITERATOR_GET_CURRENT_SLOT:
+  return: int
+  args:
+    - name: iterator
+      type: void*
+
+ITERATOR_MOVE_NEXT:
+  return: void
+  args:
+    - name: iterator
+      type: void*
+
+DESTROY_ITERATOR:
+  return: void
+  args:
+    - name: iterator
+      type: void*
