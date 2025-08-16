@@ -1,3 +1,12 @@
+## What's Changed in v1.0.335
+* fix: obsolete `GetHitGroup()` and point to `HitGroupId` schema property ([51b6b45](https://github.com/roflmuffin/CounterStrikeSharp/commit/51b6b45390f9562a3f0d8bdc34af474b28a0e8b1))
+* chore(deps): update hl2sdk ([d5fad8d](https://github.com/roflmuffin/CounterStrikeSharp/commit/d5fad8d80105f8f521a24d63d1ed1d16cbb4dd7e))
+* chore(gamedata): update offsets & signatures ([bf1ce2e](https://github.com/roflmuffin/CounterStrikeSharp/commit/bf1ce2e8a34b0d89b21cfc5180ca9feec6fd64c2))
+* fix: revert MaxPlayers caching ([0761d26](https://github.com/roflmuffin/CounterStrikeSharp/commit/0761d267ba27d3a0c522a030cd512119b3d10ed8))
+
+## What's Changed in v1.0.334
+* fix: update hl2sdk for patch 19602992 (Aug 14 2025) by [@switz](https://github.com/switz) in [#988](https://github.com/roflmuffin/CounterStrikeSharp/pull/988) ([f7c69a6](https://github.com/roflmuffin/CounterStrikeSharp/commit/f7c69a60bea983be132d27cedafd904679b6415c))
+
 ## What's Changed in v1.0.333
 * perf: cache `Server.MaxPlayers` to improve performance of `Utilities.GetPlayers()` ([1f9c7a0](https://github.com/roflmuffin/CounterStrikeSharp/commit/1f9c7a090bf39b3bcf54a34a62962de1f4cf501b))
 * feat: add `OnPlayerChat` listener in [#973](https://github.com/roflmuffin/CounterStrikeSharp/pull/973) ([2cf2d45](https://github.com/roflmuffin/CounterStrikeSharp/commit/2cf2d45e8e2f86f6a51c1e7e6c118d9333efea58))
