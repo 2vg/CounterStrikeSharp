@@ -28,12 +28,12 @@
 
 #include "khook.hpp"
 
-KHook::Member
+KHook::Member<ISource2GameEntities, void, CCheckTransmitInfoHack**, uint32_t, CBitVec<16384>&, CBitVec<16384>&, const Entity2Networkable_t**,
+              const uint16*, uint32_t>
     checkTransmitHook(&counterstrikesharp::globals::entityManager, &counterstrikesharp::EntityManager::Hook_CheckTransmit, nullptr);
 
-KHook::Function fireOutputInternalHook(&counterstrikesharp::globals::entityManager,
-                                       &counterstrikesharp::EntityManager::Hook_FireOutputInternal,
-                                       nullptr);
+KHook::Function<void, CEntityIOOutput* const, CEntityInstance*, CEntityInstance*, const CVariant* const, float, void*, char*> fireOutputInternalHook(
+    &counterstrikesharp::globals::entityManager, &counterstrikesharp::EntityManager::Hook_FireOutputInternal, nullptr);
 
 namespace counterstrikesharp {
 

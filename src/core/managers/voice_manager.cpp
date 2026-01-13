@@ -23,10 +23,10 @@
 #include "core/managers/player_manager.h"
 #include "scripting/callback_manager.h"
 
-KHook::Virtual setClientListeningHook(&IVEngineServer2::SetClientListening,
-                                      &counterstrikesharp::globals::voiceManager,
-                                      &counterstrikesharp::VoiceManager::Hook_SetClientListening,
-                                      nullptr);
+KHook::Virtual<IVEngineServer2, bool, CPlayerSlot, CPlayerSlot, bool> setClientListeningHook(&IVEngineServer2::SetClientListening,
+                                                                                             &counterstrikesharp::globals::voiceManager,
+                                                                                             &counterstrikesharp::VoiceManager::Hook_SetClientListening,
+                                                                                             nullptr);
 
 namespace counterstrikesharp {
 
