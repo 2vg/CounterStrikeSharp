@@ -27,10 +27,11 @@
 
 using namespace google;
 
-KHook::Virtual postEventHook(&IGameEventSystem::PostEventAbstract,
-                             &counterstrikesharp::globals::userMessageManager,
-                             &counterstrikesharp::UserMessageManager::Hook_PostEvent,
-                             nullptr);
+KHook::Virtual<IGameEventSystem, void, CSplitScreenSlot, bool, int, const uint64*, INetworkMessageInternal*, const CNetMessage*, unsigned long, NetChannelBufType_t>
+    postEventHook(&IGameEventSystem::PostEventAbstract,
+                  &counterstrikesharp::globals::userMessageManager,
+                  &counterstrikesharp::UserMessageManager::Hook_PostEvent,
+                  nullptr);
 
 namespace counterstrikesharp {
 UserMessageManager::UserMessageManager() {}
